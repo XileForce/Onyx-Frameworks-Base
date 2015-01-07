@@ -42,7 +42,6 @@ public class VideoCallImpl extends VideoCall {
     private static final int MSG_CHANGE_PEER_DIMENSIONS = 4;
     private static final int MSG_CHANGE_CALL_DATA_USAGE = 5;
     private static final int MSG_CHANGE_CAMERA_CAPABILITIES = 6;
-    private static final int MSG_CHANGE_VIDEO_QUALITY = 7;
 
     private final IVideoProvider mVideoProvider;
     private final VideoCallListenerBinder mBinder;
@@ -89,12 +88,7 @@ public class VideoCallImpl extends VideoCall {
         }
 
         @Override
-        public void changeVideoQuality(int videoQuality) {
-            mHandler.obtainMessage(MSG_CHANGE_VIDEO_QUALITY, videoQuality, 0).sendToTarget();
-        }
-
-        @Override
-        public void changeCallDataUsage(long dataUsage) {
+        public void changeCallDataUsage(int dataUsage) {
             mHandler.obtainMessage(MSG_CHANGE_CALL_DATA_USAGE, dataUsage).sendToTarget();
         }
 
@@ -145,14 +139,11 @@ public class VideoCallImpl extends VideoCall {
                     }
                     break;
                 case MSG_CHANGE_CALL_DATA_USAGE:
-                    mVideoCallListener.onCallDataUsageChanged((long) msg.obj);
+                    mVideoCallListener.onCallDataUsageChanged(msg.arg1);
                     break;
                 case MSG_CHANGE_CAMERA_CAPABILITIES:
                     mVideoCallListener.onCameraCapabilitiesChanged(
                             (CameraCapabilities) msg.obj);
-                    break;
-                case MSG_CHANGE_VIDEO_QUALITY:
-                    mVideoCallListener.onVideoQualityChanged(msg.arg1);
                     break;
                 default:
                     break;

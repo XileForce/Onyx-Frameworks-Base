@@ -207,14 +207,4 @@ interface IAudioService {
 
     boolean registerAudioPolicy(in AudioPolicyConfig policyConfig, IBinder cb);
     oneway void unregisterAudioPolicyAsync(in IBinder cb);
-
-    void setRemoteControlClientBrowsedPlayer();
-
-    void getRemoteControlClientNowPlayingEntries();
-
-    void setRemoteControlClientPlayItem(long uid, int scope);
-
-    void updateRemoteControllerOnExistingMediaPlayers();
-
-    void addMediaPlayerAndUpdateRemoteController(String packageName);
 }

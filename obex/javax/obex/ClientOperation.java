@@ -723,14 +723,12 @@ public final class ClientOperation implements Operation, BaseStream {
                     mReplyHeader.responseCode = ResponseCodes.OBEX_HTTP_CONTINUE;
                 }
 
-                while ((mReplyHeader.responseCode == ResponseCodes.OBEX_HTTP_CONTINUE)
-                    && !mOperationDone) {
+                while (mReplyHeader.responseCode == ResponseCodes.OBEX_HTTP_CONTINUE) {
                     if (!sendRequest(0x83)) {
                         break;
                     }
                 }
-                while ((mReplyHeader.responseCode == ResponseCodes.OBEX_HTTP_CONTINUE) &&
-                    !mOperationDone) {
+                while (mReplyHeader.responseCode == ResponseCodes.OBEX_HTTP_CONTINUE) {
                     mParent.sendRequest(0x83, null, mReplyHeader, mPrivateInput);
                 }
                 mOperationDone = true;

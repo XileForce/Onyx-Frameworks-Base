@@ -38,7 +38,6 @@ import android.os.Message;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
-import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.util.EventLog;
 import android.util.Log;
@@ -126,17 +125,11 @@ public final class BroadcastQueue {
      */
     BroadcastRecord mPendingBroadcast = null;
 
-     /**
-      * Intent broadcast that we are currently processing
-      */
-    BroadcastRecord mCurrentBroadcast = null;
-
     /**
      * The receiver index that is pending, to restart the broadcast if needed.
      */
     int mPendingBroadcastRecvIndex;
 
-    static ArrayList<String> quickbootWhiteList = null;
     static final int BROADCAST_INTENT_MSG = ActivityManagerService.FIRST_BROADCAST_QUEUE_MSG;
     static final int BROADCAST_TIMEOUT_MSG = ActivityManagerService.FIRST_BROADCAST_QUEUE_MSG + 1;
 
@@ -303,7 +296,7 @@ public final class BroadcastQueue {
     public void skipCurrentReceiverLocked(ProcessRecord app) {
         boolean reschedule = false;
         BroadcastRecord r = app.curReceiver;
-        if (r != null && r.queue == this) {
+        if (r != null) {
             // The current broadcast is waiting for this app's receiver
             // to be finished.  Looks like that's not going to happen, so
             // let the broadcast continue.
@@ -359,7 +352,7 @@ public final class BroadcastQueue {
         }
         r.receiver = null;
         r.intent.setComponent(null);
-        if (r.curApp != null && r.curApp.curReceiver == r) {
+        if (r.curApp != null) {
             r.curApp.curReceiver = null;
         }
         if (r.curFilter != null) {
@@ -545,10 +538,6 @@ public final class BroadcastQueue {
         }
     }
 
-    BroadcastRecord getProcessingBroadcast() {
-        return mCurrentBroadcast;
-    }
-
     final void processNextBroadcast(boolean fromMsg) {
         synchronized(mService) {
             BroadcastRecord r;
@@ -569,7 +558,6 @@ public final class BroadcastQueue {
                 r = mParallelBroadcasts.remove(0);
                 r.dispatchTime = SystemClock.uptimeMillis();
                 r.dispatchClockTime = System.currentTimeMillis();
-                mCurrentBroadcast = r;
                 final int N = r.receivers.size();
                 if (DEBUG_BROADCAST_LIGHT) Slog.v(TAG, "Processing parallel broadcast ["
                         + mQueueName + "] " + r);
@@ -581,7 +569,6 @@ public final class BroadcastQueue {
                     deliverToRegisteredReceiverLocked(r, (BroadcastFilter)target, false);
                 }
                 addBroadcastToHistoryLocked(r);
-                mCurrentBroadcast = null;
                 if (DEBUG_BROADCAST_LIGHT) Slog.v(TAG, "Done with parallel broadcast ["
                         + mQueueName + "] " + r);
             }
@@ -631,7 +618,6 @@ public final class BroadcastQueue {
                     return;
                 }
                 r = mOrderedBroadcasts.get(0);
-                mCurrentBroadcast = r;
                 boolean forceReceive = false;
 
                 // Ensure that even if something goes awry with the timeout
@@ -705,7 +691,6 @@ public final class BroadcastQueue {
                     // ... and on to the next...
                     addBroadcastToHistoryLocked(r);
                     mOrderedBroadcasts.remove(0);
-                    mCurrentBroadcast = null;
                     r = null;
                     looped = true;
                     continue;
@@ -940,10 +925,7 @@ public final class BroadcastQueue {
             if (DEBUG_BROADCAST)  Slog.v(TAG,
                     "Need to start app ["
                     + mQueueName + "] " + targetProcess + " for broadcast " + r);
-            if ((SystemProperties.getInt("sys.quickboot.enable", 0) == 1 &&
-                        SystemProperties.getInt("sys.quickboot.poweron", 0) == 0 &&
-                       !getWhiteList().contains(info.activityInfo.applicationInfo.packageName))
-                || (r.curApp=mService.startProcessLocked(targetProcess,
+            if ((r.curApp=mService.startProcessLocked(targetProcess,
                     info.activityInfo.applicationInfo, true,
                     r.intent.getFlags() | Intent.FLAG_FROM_BACKGROUND,
                     "broadcast", r.curComponent,
@@ -966,16 +948,6 @@ public final class BroadcastQueue {
             mPendingBroadcast = r;
             mPendingBroadcastRecvIndex = recIdx;
         }
-    }
-
-    private ArrayList<String> getWhiteList() {
-        if (quickbootWhiteList == null) {
-            quickbootWhiteList = new ArrayList();
-            // allow deskclock app to be launched
-            quickbootWhiteList.add("com.android.deskclock");
-            quickbootWhiteList.add("com.qapp.quickboot");
-        }
-        return quickbootWhiteList;
     }
 
     final void setBroadcastTimeoutLocked(long timeoutTime) {

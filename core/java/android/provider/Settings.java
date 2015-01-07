@@ -1239,7 +1239,6 @@ public final class Settings {
             MOVED_TO_SECURE.add(Secure.WIFI_WATCHDOG_PING_COUNT);
             MOVED_TO_SECURE.add(Secure.WIFI_WATCHDOG_PING_DELAY_MS);
             MOVED_TO_SECURE.add(Secure.WIFI_WATCHDOG_PING_TIMEOUT_MS);
-            MOVED_TO_SECURE.add(Secure.STATS_COLLECTION);
 
             // At one time in System, then Global, but now back in Secure
             MOVED_TO_SECURE.add(Secure.INSTALL_NON_MARKET_APPS);
@@ -1973,11 +1972,6 @@ public final class Settings {
         public static final String NEXT_ALARM_FORMATTED = "next_alarm_formatted";
 
         /**
-         * @hide
-         */
-        public static final String SHOW_ALARM_ICON = "show_alarm_icon";
-
-        /**
          * Scaling factor for fonts, float.
          */
         public static final String FONT_SCALE = "font_scale";
@@ -2042,47 +2036,6 @@ public final class Settings {
         public static final int SCREEN_BRIGHTNESS_MODE_AUTOMATIC = 1;
 
         /**
-         * Whether to control brightness from status bar
-         *
-         * @hide
-         */
-        public static final String STATUS_BAR_BRIGHTNESS_CONTROL = "status_bar_brightness_control";
-
-        /**
-         * Whether to show the IME switcher in the status bar
-         * @hide
-         */
-        public static final String STATUS_BAR_IME_SWITCHER = "status_bar_ime_switcher";
-
-        /**
-         * The keyboard brightness to be used while the screen is on.
-         * Valid value range is between 0 and {@link PowerManager#getMaximumKeyboardBrightness()}
-         * @hide
-         */
-        public static final String KEYBOARD_BRIGHTNESS = "keyboard_brightness";
-
-        /**
-         * The button brightness to be used while the screen is on or after a button press,
-         * depending on the value of {@link BUTTON_BACKLIGHT_TIMEOUT}.
-         * Valid value range is between 0 and {@link PowerManager#getMaximumButtonBrightness()}
-         * @hide
-         */
-        public static final String BUTTON_BRIGHTNESS = "button_brightness";
-
-        /**
-         * The time in ms to keep the button backlight on after pressing a button.
-         * A value of 0 will keep the buttons on for as long as the screen is on.
-         * @hide
-         */
-        public static final String BUTTON_BACKLIGHT_TIMEOUT = "button_backlight_timeout";
-
-        /** Whether to allow one finger quick settings expansion on the right side of the statusbar.
-         *
-         * @hide
-         */
-        public static final String STATUS_BAR_QUICK_QS_PULLDOWN = "status_bar_quick_qs_pulldown";
-
-        /**
          * Control whether the process CPU usage meter should be shown.
          *
          * @deprecated Use {@link Global#SHOW_PROCESSES} instead
@@ -2099,13 +2052,6 @@ public final class Settings {
          */
         @Deprecated
         public static final String ALWAYS_FINISH_ACTIVITIES = Global.ALWAYS_FINISH_ACTIVITIES;
-
-        /**
-         * Volume Adjust Sounds Enable, This is the noise made when using volume hard buttons
-         * Defaults to 1 - sounds enabled
-         * @hide
-         */
-        public static final String VOLUME_ADJUST_SOUNDS_ENABLED = "volume_adjust_sounds_enabled";
 
         /**
          * Determines which streams are affected by ringer mode changes. The
@@ -2197,21 +2143,6 @@ public final class Settings {
         public static final String VOLUME_MASTER_MUTE = "volume_master_mute";
 
         /**
-         * Whether or not volume button music controls should be enabled to seek media tracks
-         * @hide
-         */
-        public static final String VOLBTN_MUSIC_CONTROLS = "volbtn_music_controls";
-
-        /**
-         * Swap volume buttons when the screen is rotated
-         * 0 - Disabled
-         * 1 - Enabled (screen is rotated by 90 or 180 degrees: phone, hybrid)
-         * 2 - Enabled (screen is rotated by 180 or 270 degrees: tablet)
-         * @hide
-         */
-        public static final String SWAP_VOLUME_KEYS_ON_ROTATION = "swap_volume_keys_on_rotation";
-
-        /**
          * Microphone mute (int 1 = mute, 0 = not muted).
          *
          * @hide
@@ -2235,55 +2166,6 @@ public final class Settings {
         @Deprecated
         public static final String NOTIFICATIONS_USE_RING_VOLUME =
             "notifications_use_ring_volume";
-
-        /**
-         * Whether the blacklisting feature for phone calls is enabled
-         * @hide
-         */
-        public static final String PHONE_BLACKLIST_ENABLED = "phone_blacklist_enabled";
-
-        /**
-         * Whether a notification should be shown when a call/message is blocked
-         * @hide
-         */
-        public static final String PHONE_BLACKLIST_NOTIFY_ENABLED = "phone_blacklist_notify_enabled";
-
-        /**
-         * Whether the blacklisting feature for phone calls from private numbers is enabled
-         * @hide
-         */
-        public static final String PHONE_BLACKLIST_PRIVATE_NUMBER_MODE = "phone_blacklist_private_number_enabled";
-
-        /**
-         * Whether the blacklisting feature for phone calls from unknown numbers is enabled
-         * @hide
-         */
-        public static final String PHONE_BLACKLIST_UNKNOWN_NUMBER_MODE = "phone_blacklist_unknown_number_enabled";
-
-        /**
-         * Constants to be used for {@link PHONE_BLACKLIST_PRIVATE_NUMBER_MODE} and
-         * {@link PHONE_BLACKLIST_UNKNOWN_NUMBER_MODE}.
-         * @hide
-         */
-        public static final int BLACKLIST_DO_NOT_BLOCK = 0;
-        /**
-         * @hide
-         */
-        public static final int BLACKLIST_BLOCK = 1;
-        /**
-         * @hide
-         */
-        public static final int BLACKLIST_PHONE_SHIFT = 0;
-        /**
-         * @hide
-         */
-        public static final int BLACKLIST_MESSAGE_SHIFT = 4;
-
-        /**
-         * Whether the regex blacklisting feature for phone calls is enabled
-         * @hide
-         */
-        public static final String PHONE_BLACKLIST_REGEX_ENABLED = "phone_blacklist_regex_enabled";
 
         /**
          * Whether silent mode should allow vibration feedback. This is used
@@ -2315,14 +2197,6 @@ public final class Settings {
         public static final String APPEND_FOR_LAST_AUDIBLE = "_last_audible";
 
         /**
-         * Persistent store for the static default system ringtone URI.
-         * This setting is initialized within media scanner and read only afterwards.
-         * It provides the persistent URI of default system ringtone.
-         * @hide
-         */
-        public static final String DEFAULT_RINGTONE = "ringtone_default";
-
-        /**
          * Persistent store for the system-wide default ringtone URI.
          * <p>
          * If you need to play the default ringtone at any given time, it is recommended
@@ -2332,30 +2206,6 @@ public final class Settings {
          * @see #DEFAULT_RINGTONE_URI
          */
         public static final String RINGTONE = "ringtone";
-
-        /**
-         * Persistent store for the SIM-2 ringtone URI.
-         * <p>
-         * If you need to play SIM-2 ringtone at any given time, it is recommended
-         * you give {@link #DEFAULT_RINGTONE_URI_2} to the media player.  It will resolve
-         * to the set default ringtone at the time of playing.
-         *
-         * @see #DEFAULT_RINGTONE_URI_2
-         * @hide
-         */
-        public static final String RINGTONE_2 = "ringtone_2";
-
-        /**
-         * Persistent store for the SIM-3 ringtone URI.
-         * <p>
-         * If you need to play SIM-3 ringtone at any given time, it is recommended
-         * you give {@link #DEFAULT_RINGTONE_URI_3} to the media player.  It will resolve
-         * to the set default ringtone at the time of playing.
-         *
-         * @see #DEFAULT_RINGTONE_URI_3
-         * @hide
-         */
-        public static final String RINGTONE_3 = "ringtone_3";
 
         /**
          * A {@link Uri} that will point to the current default ringtone at any
@@ -2368,51 +2218,12 @@ public final class Settings {
         public static final Uri DEFAULT_RINGTONE_URI = getUriFor(RINGTONE);
 
         /**
-         * A {@link Uri} that will point to the current SIM-2 ringtone at any
-         * given time.
-         * <p>
-         * If the current default ringtone is in the DRM provider and the caller
-         * does not have permission, the exception will be a
-         * FileNotFoundException.
-         *
-         * @hide
-         */
-        public static final Uri DEFAULT_RINGTONE_URI_2 = getUriFor(RINGTONE_2);
-
-        /**
-         * A {@link Uri} that will point to the current SIM-3 ringtone at any
-         * given time.
-         * <p>
-         * If the current default ringtone is in the DRM provider and the caller
-         * does not have permission, the exception will be a
-         * FileNotFoundException.
-         *
-         * @hide
-         */
-        public static final Uri DEFAULT_RINGTONE_URI_3 = getUriFor(RINGTONE_3);
-
-        /**
-         * Maximum number of ringtones supported.
-         * <p>
-         * Maximum number of ringtones supported by settings. Increment this
-         * if a new URI needs to be added for ringtone.
-         * @hide
-         */
-        public static final int MAX_NUM_RINGTONES = 3;
-
-        /**
          * Persistent store for the system-wide default notification sound.
          *
          * @see #RINGTONE
          * @see #DEFAULT_NOTIFICATION_URI
          */
         public static final String NOTIFICATION_SOUND = "notification_sound";
-
-        /**
-         * Show the pending notification counts as overlays on the status bar
-         * @hide
-         */
-        public static final String SYSTEM_PROFILES_ENABLED = "system_profiles_enabled";
 
         /**
          * A {@link Uri} that will point to the current default notification
@@ -2499,13 +2310,6 @@ public final class Settings {
         public static final String TIME_12_24 = "time_12_24";
 
         /**
-        * Developer options - Navigation Bar show switch
-        * @hide
-        */
-        public static final String DEV_FORCE_SHOW_NAVBAR = "dev_force_show_navbar";
-
-
-        /**
          * Date format string
          *   mm/dd/yyyy
          *   dd/mm/yyyy
@@ -2549,31 +2353,6 @@ public final class Settings {
          */
         @Deprecated
         public static final String ANIMATOR_DURATION_SCALE = Global.ANIMATOR_DURATION_SCALE;
-
-        /**
-         * Use EdgeGesture Service for system gestures in PhoneWindowManager
-         * @hide
-         */
-        public static final String USE_EDGE_SERVICE_FOR_GESTURES = "edge_service_for_gestures";
-
-        /**
-         * Show the pending notification counts as overlays on the status bar
-         * @hide
-         */
-        public static final String STATUS_BAR_NOTIF_COUNT = "status_bar_notif_count";
-
-        /**
-         * Control the type of rotation which can be performed using the accelerometer
-         * if ACCELEROMETER_ROTATION is enabled.
-         * Value is a bitwise combination of
-         * 1 = 0 degrees (portrait)
-         * 2 = 90 degrees (left)
-         * 4 = 180 degrees (inverted portrait)
-         * 8 = 270 degrees (right)
-         * Setting to 0 is effectively orientation lock
-         * @hide
-         */
-        public static final String ACCELEROMETER_ROTATION_ANGLES = "accelerometer_rotation_angles";
 
         /**
          * Control whether the accelerometer will be used to change screen
@@ -2681,114 +2460,6 @@ public final class Settings {
         public static final String NOTIFICATION_LIGHT_PULSE = "notification_light_pulse";
 
         /**
-         * What color to use for the notification LED by default
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_DEFAULT_COLOR =
-                "notification_light_pulse_default_color";
-
-        /**
-         * How long to flash the notification LED by default
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_DEFAULT_LED_ON =
-                "notification_light_pulse_default_led_on";
-
-        /**
-         * How long to wait between flashes for the notification LED by default
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_DEFAULT_LED_OFF =
-                "notification_light_pulse_default_led_off";
-
-        /**
-         * What color to use for the missed call notification LED
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_CALL_COLOR =
-                "notification_light_pulse_call_color";
-
-        /**
-         * How long to flash the missed call notification LED
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_CALL_LED_ON =
-                "notification_light_pulse_call_led_on";
-
-        /**
-         * How long to wait between flashes for the missed call notification LED
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_CALL_LED_OFF =
-                "notification_light_pulse_call_led_off";
-        /**
-         * What color to use for the voicemail notification LED
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_VMAIL_COLOR =
-                "notification_light_pulse_vmail_color";
-
-        /**
-         * How long to flash the voicemail notification LED
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_VMAIL_LED_ON =
-                "notification_light_pulse_vmail_led_on";
-
-        /**
-         * How long to wait between flashes for the voicemail notification LED
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_VMAIL_LED_OFF =
-                "notification_light_pulse_vmail_led_off";
-
-        /**
-         * Whether to use the custom LED values for the notification pulse LED.
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_CUSTOM_ENABLE =
-                "notification_light_pulse_custom_enable";
-
-        /**
-         * Which custom LED values to use for the notification pulse LED.
-         * @hide
-         */
-        public static final String NOTIFICATION_LIGHT_PULSE_CUSTOM_VALUES =
-                "notification_light_pulse_custom_values";
-
-        /**
-         * Whether the battery light should be enabled (if hardware supports it)
-         * The value is boolean (1 or 0).
-         * @hide
-         */
-        public static final String BATTERY_LIGHT_ENABLED = "battery_light_enabled";
-
-        /**
-         * Whether the battery LED should repeatedly flash when the battery is low
-         * on charge. The value is boolean (1 or 0).
-         * @hide
-         */
-        public static final String BATTERY_LIGHT_PULSE = "battery_light_pulse";
-
-        /**
-         * What color to use for the battery LED while charging - low
-         * @hide
-         */
-        public static final String BATTERY_LIGHT_LOW_COLOR = "battery_light_low_color";
-
-        /**
-         * What color to use for the battery LED while charging - medium
-         * @hide
-         */
-        public static final String BATTERY_LIGHT_MEDIUM_COLOR = "battery_light_medium_color";
-
-        /**
-         * What color to use for the battery LED while charging - full
-         * @hide
-         */
-        public static final String BATTERY_LIGHT_FULL_COLOR = "battery_light_full_color";
-
-        /**
          * Show pointer location on screen?
          * 0 = no
          * 1 = yes
@@ -2830,12 +2501,6 @@ public final class Settings {
          */
         @Deprecated
         public static final String DOCK_SOUNDS_ENABLED = Global.DOCK_SOUNDS_ENABLED;
-
-        /**
-         * Check the proximity sensor during wakeup
-         * @hide
-         */
-        public static final String PROXIMITY_ON_WAKE = "proximity_on_wake";
 
         /**
          * Whether to play sounds when the keyguard is shown and dismissed.
@@ -2966,171 +2631,6 @@ public final class Settings {
         public static final String LOCK_TO_APP_EXIT_LOCKED = "lock_to_app_exit_locked";
 
         /**
-         * Enable looking up of phone numbers of nearby places
-         *
-         * @hide
-         */
-        public static final String ENABLE_FORWARD_LOOKUP = "enable_forward_lookup";
-
-        /**
-         * Enable looking up of phone numbers of people
-         *
-         * @hide
-         */
-        public static final String ENABLE_PEOPLE_LOOKUP = "enable_people_lookup";
-
-        /**
-         * Enable looking up of information of phone numbers not in the contacts
-         *
-         * @hide
-         */
-        public static final String ENABLE_REVERSE_LOOKUP = "enable_reverse_lookup";
-
-        /**
-         * The forward lookup provider
-         *
-         * @hide
-         */
-        public static final String FORWARD_LOOKUP_PROVIDER = "forward_lookup_provider";
-
-        /**
-         * The people lookup provider
-         *
-         * @hide
-         */
-        public static final String PEOPLE_LOOKUP_PROVIDER = "people_lookup_provider";
-
-        /**
-         * The reverse lookup provider
-         *
-         * @hide
-         */
-        public static final String REVERSE_LOOKUP_PROVIDER = "reverse_lookup_provider";
-
-        /**
-         * The OpenCNAM paid account ID
-         *
-         * @hide
-         */
-        public static final String DIALER_OPENCNAM_ACCOUNT_SID = "dialer_opencnam_account_sid";
-
-        /**
-         * The OpenCNAM authentication token
-         *
-         * @hide
-         */
-        public static final String DIALER_OPENCNAM_AUTH_TOKEN = "dialer_opencnam_auth_token";
-
-        /**
-         * Action to perform when the home key is long-pressed.
-         * (Default can be configured via config_longPressOnHomeBehavior)
-         * 0 - Nothing
-         * 1 - Menu
-         * 2 - App-switch
-         * 3 - Search
-         * 4 - Voice search
-         * 5 - In-app search
-         * 6 - Launch Camera
-         * 7 - Action Sleep
-         * 8 - Last app
-         * @hide
-         */
-        public static final String KEY_HOME_LONG_PRESS_ACTION = "key_home_long_press_action";
-
-        /**
-         * Action to perform when the home key is double-tapped.
-         * (Default can be configured via config_doubleTapOnHomeBehavior)
-         * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
-         * @hide
-         */
-        public static final String KEY_HOME_DOUBLE_TAP_ACTION = "key_home_double_tap_action";
-
-        /**
-         * Action to perform when the menu key is pressed. (Default is 1)
-         * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
-         * @hide
-         */
-        public static final String KEY_MENU_ACTION = "key_menu_action";
-
-        /**
-         * Action to perform when the menu key is long-pressed.
-         * (Default is 0 on devices with a search key, 3 on devices without)
-         * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
-         * @hide
-         */
-        public static final String KEY_MENU_LONG_PRESS_ACTION = "key_menu_long_press_action";
-
-        /**
-         * Action to perform when the assistant (search) key is pressed. (Default is 3)
-         * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
-         * @hide
-         */
-        public static final String KEY_ASSIST_ACTION = "key_assist_action";
-
-        /**
-         * Action to perform when the assistant (search) key is long-pressed. (Default is 4)
-         * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
-         * @hide
-         */
-        public static final String KEY_ASSIST_LONG_PRESS_ACTION = "key_assist_long_press_action";
-
-        /**
-         * Action to perform when the app switch key is pressed. (Default is 2)
-         * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
-         * @hide
-         */
-        public static final String KEY_APP_SWITCH_ACTION = "key_app_switch_action";
-
-        /**
-         * Action to perform when the app switch key is long-pressed. (Default is 0)
-         * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
-         * @hide
-         */
-        public static final String KEY_APP_SWITCH_LONG_PRESS_ACTION = "key_app_switch_long_press_action";
-
-        /**
-         * Whether to wake the screen with the home key, the value is boolean.
-         * @hide
-         */
-        public static final String HOME_WAKE_SCREEN = "home_wake_screen";
-
-        /**
-         * Whether to wake the screen with the back key, the value is boolean.
-         * @hide
-         */
-        public static final String BACK_WAKE_SCREEN = "back_wake_screen";
-
-        /**
-         * Whether to wake the screen with the menu key, the value is boolean.
-         * @hide
-         */
-        public static final String MENU_WAKE_SCREEN = "menu_wake_screen";
-
-        /**
-         * Whether to wake the screen with the volume keys, the value is boolean.
-         * @hide
-         */
-        public static final String VOLUME_WAKE_SCREEN = "volume_wake_screen";
-
-        /**
-         * Whether the phone ringtone should be played in an increasing manner
-         * @hide
-         */
-        public static final String INCREASING_RING = "increasing_ring";
-
-        /**
-         * Start volume fraction for increasing ring volume
-         * @hide
-         */
-        public static final String INCREASING_RING_START_VOLUME = "increasing_ring_start_vol";
-
-        /**
-         * Ramp up time (seconds) for increasing ring
-         * @hide
-         */
-        public static final String INCREASING_RING_RAMP_UP_TIME = "increasing_ring_ramp_up_time";
-
-        /**
          * I am the lolrus.
          * <p>
          * Nonzero values indicate that the user has a bukkit.
@@ -3138,74 +2638,6 @@ public final class Settings {
          * @hide
          */
         public static final String EGG_MODE = "egg_mode";
-
-        /**
-         * Display style of the status bar battery information
-         * 0: Display the battery an icon in portrait mode
-         * 2: Display the battery as a circle
-         * 4: Hide the battery status information
-         * 5: Display the battery an icon in landscape mode
-         * 6: Display the battery as plain text
-         * default: 0
-         * @hide
-         */
-        public static final String STATUS_BAR_BATTERY_STYLE = "status_bar_battery_style";
-
-        /**
-         * Status bar battery %
-         * 0: Hide the battery percentage
-         * 1: Display the battery percentage inside the icon
-         * 2: Display the battery percentage next to the icon
-         * @hide
-         */
-        public static final String STATUS_BAR_SHOW_BATTERY_PERCENT = "status_bar_show_battery_percent";
-
-        /**
-         *  Enable statusbar double tap gesture on to put device to sleep
-         * @hide
-         */
-        public static final String DOUBLE_TAP_SLEEP_GESTURE = "double_tap_sleep_gesture";
-
-        /**
-         * Boolean value on whether to show weather in the statusbar
-         * @hide
-         */
-        public static final String STATUS_BAR_SHOW_WEATHER = "status_bar_show_weather";
-
-        /**
-          * Volume keys control cursor in text fields (default is 0)
-          * 0 - Disabled
-          * 1 - Volume up/down moves cursor left/right
-          * 2 - Volume up/down moves cursor right/left
-          * @hide
-          */
-         public static final String VOLUME_KEY_CURSOR_CONTROL = "volume_key_cursor_control";
-
-        /**
-         * Whether to enable voice wakeup.  The value is boolean (1 or 0).
-         * @hide
-         */
-        public static final String VOICE_WAKEUP = "voice_wakeup";
-
-        /**
-         * An intent (a flattened Uri String) to launch when user voice launch
-         * action is detected. An empty or null string will launch the default
-         * voice search activity.
-         * @hide
-         */
-        public static final String VOICE_LAUNCH_INTENT = "voice_launch_intent";
-
-        /**
-         * Whether navigation bar is placed on the left side in landscape mode
-         * @hide
-         */
-        public static final String NAVBAR_LEFT_IN_LANDSCAPE = "navigation_bar_left";
-
-        /**
-         * Locale for secondary overlay on dialer for t9 search input
-         * @hide
-         */
-        public static final String T9_SEARCH_INPUT_LOCALE = "t9_search_input_locale";
 
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
@@ -3272,18 +2704,7 @@ public final class Settings {
             POINTER_SPEED,
             VIBRATE_WHEN_RINGING,
             RINGTONE,
-            NOTIFICATION_SOUND,
-            SYSTEM_PROFILES_ENABLED,
-            PHONE_BLACKLIST_ENABLED,
-            PHONE_BLACKLIST_NOTIFY_ENABLED,
-            PHONE_BLACKLIST_PRIVATE_NUMBER_MODE,
-            PHONE_BLACKLIST_UNKNOWN_NUMBER_MODE,
-            PHONE_BLACKLIST_REGEX_ENABLED,
-            STATUS_BAR_BATTERY_STYLE,
-            STATUS_BAR_SHOW_BATTERY_PERCENT,
-            INCREASING_RING,
-            INCREASING_RING_START_VOLUME,
-            INCREASING_RING_RAMP_UP_TIME
+            NOTIFICATION_SOUND
         };
 
         /**
@@ -3639,7 +3060,6 @@ public final class Settings {
             MOVED_TO_GLOBAL.add(Settings.Global.WIFI_P2P_DEVICE_NAME);
             MOVED_TO_GLOBAL.add(Settings.Global.WIFI_SAVED_STATE);
             MOVED_TO_GLOBAL.add(Settings.Global.WIFI_SUPPLICANT_SCAN_INTERVAL_MS);
-            MOVED_TO_GLOBAL.add(Settings.Global.WIFI_SUPPLICANT_SCAN_INTERVAL_WFD_CONNECTED_MS);
             MOVED_TO_GLOBAL.add(Settings.Global.WIFI_SUSPEND_OPTIMIZATIONS_ENABLED);
             MOVED_TO_GLOBAL.add(Settings.Global.WIFI_ENHANCED_AUTO_JOIN);
             MOVED_TO_GLOBAL.add(Settings.Global.WIFI_NETWORK_SHOW_RSSI);
@@ -4067,24 +3487,6 @@ public final class Settings {
          */
         @Deprecated
         public static final String ADB_ENABLED = Global.ADB_ENABLED;
-
-        /**
-         * Whether to display the ADB notification.
-         * @hide
-         */
-        public static final String ADB_NOTIFY = "adb_notify";
-
-        /**
-         * The TCP/IP port to run ADB on, or -1 for USB
-         * @hide
-         */
-        public static final String ADB_PORT = "adb_port";
-
-        /**
-         * The hostname for this device
-         * @hide
-         */
-        public static final String DEVICE_HOSTNAME = "device_hostname";
 
         /**
          * Setting to allow mock locations and location provider status to be injected into the
@@ -4947,12 +4349,6 @@ public final class Settings {
                 Global.WIFI_MOBILE_DATA_TRANSITION_WAKELOCK_TIMEOUT_MS;
 
         /**
-         * Whether the Wimax should be on.  Only the WiMAX service should touch this.
-         * @hide
-         */
-        public static final String WIMAX_ON = "wimax_on";
-
-        /**
          * Whether background data usage is allowed.
          *
          * @deprecated As of {@link VERSION_CODES#ICE_CREAM_SANDWICH},
@@ -5282,36 +4678,6 @@ public final class Settings {
         public static final String DOZE_ENABLED = "doze_enabled";
 
         /**
-         * What happens when the user presses the Home button when the
-         * phone is ringing.<br/>
-         * <b>Values:</b><br/>
-         * 1 - Nothing happens. (Default behavior)<br/>
-         * 2 - The Home button answer the current call.<br/>
-         *
-         * @hide
-         */
-        public static final String RING_HOME_BUTTON_BEHAVIOR = "ring_home_button_behavior";
-
-        /**
-         * RING_HOME_BUTTON_BEHAVIOR value for "do nothing".
-         * @hide
-         */
-        public static final int RING_HOME_BUTTON_BEHAVIOR_DO_NOTHING = 0x1;
-
-        /**
-         * RING_HOME_BUTTON_BEHAVIOR value for "answer".
-         * @hide
-         */
-        public static final int RING_HOME_BUTTON_BEHAVIOR_ANSWER = 0x2;
-
-        /**
-         * RING_HOME_BUTTON_BEHAVIOR default value.
-         * @hide
-         */
-        public static final int RING_HOME_BUTTON_BEHAVIOR_DEFAULT =
-                RING_HOME_BUTTON_BEHAVIOR_DO_NOTHING;
-
-        /**
          * The current night mode that has been selected by the user.  Owned
          * and controlled by UiModeManagerService.  Constants are as per
          * UiModeManager.
@@ -5353,12 +4719,6 @@ public final class Settings {
          * @hide
          */
         public static final String SCREENSAVER_DEFAULT_COMPONENT = "screensaver_default_component";
-
-        /**
-         * Whether to allow killing of the foreground app by long-pressing the Back button
-         * @hide
-         */
-        public static final String KILL_APP_LONGPRESS_BACK = "kill_app_longpress_back";
 
         /**
          * The default NFC payment component
@@ -5473,50 +4833,6 @@ public final class Settings {
          */
         public static final String SLEEP_TIMEOUT = "sleep_timeout";
 
-        /** Protected Components
-         * @hide
-         */
-        public static final String PROTECTED_COMPONENTS = "protected_components";
-
-        /**
-         * Whether newly installed apps should run with privacy guard by default
-         * @hide
-         */
-        public static final String PRIVACY_GUARD_DEFAULT = "privacy_guard_default";
-
-        /**
-         * Whether to include options in power menu for rebooting into recovery or bootloader
-         * @hide
-         */
-        public static final String ADVANCED_REBOOT = "advanced_reboot";
-
-        /**
-         * Whether to display a menu containing 'Wipe data', 'Force close' and other options
-         * in the notification area and in the recent app list
-         * @hide
-         */
-        public static final String DEVELOPMENT_SHORTCUT = "development_shortcut";
-
-        /**
-         * Global stats collection
-         * @hide
-         */
-        public static final String STATS_COLLECTION = "stats_collection";
-
-
-        /**
-         * Performance profile
-         * @see config_perf_profile_prop in frameworks/base/core/res/res/values/config.xml
-         * @hide
-         */
-        public static final String PERFORMANCE_PROFILE = "performance_profile";
-
-        /**
-         * App-based performance profile selection
-         * @hide
-         */
-        public static final String APP_PERFORMANCE_PROFILES_ENABLED = "app_perf_profiles_enabled";
-
         /**
          * This are the settings to be backed up.
          *
@@ -5567,10 +4883,7 @@ public final class Settings {
             MOUNT_UMS_PROMPT,
             MOUNT_UMS_NOTIFY_ENABLED,
             UI_NIGHT_MODE,
-            SLEEP_TIMEOUT,
-            PRIVACY_GUARD_DEFAULT,
-            ADVANCED_REBOOT,
-            DEVELOPMENT_SHORTCUT
+            SLEEP_TIMEOUT
         };
 
         /**
@@ -5942,13 +5255,6 @@ public final class Settings {
          * @hide
          */
         public static final String BUGREPORT_IN_POWER_MENU = "bugreport_in_power_menu";
-
-        /**
-         * Whether to wake the display when plugging or unplugging the charger
-         *
-         * @hide
-         */
-        public static final String WAKE_WHEN_PLUGGED_OR_UNPLUGGED = "wake_when_plugged_or_unplugged";
 
         /**
          * Whether ADB is enabled.
@@ -6545,13 +5851,6 @@ public final class Settings {
                "wifi_scan_interval_p2p_connected_ms";
 
        /**
-        * The intervel in milliseconds to scan at supplicant when wfd session
-        * @hide
-        */
-       public static final String WIFI_SUPPLICANT_SCAN_INTERVAL_WFD_CONNECTED_MS =
-               "wifi_scan_intervel_wfd_connected_ms";
-
-       /**
         * Whether the Wi-Fi watchdog is enabled.
         */
        public static final String WIFI_WATCHDOG_ON = "wifi_watchdog_on";
@@ -6962,9 +6261,6 @@ public final class Settings {
                 BLUETOOTH_A2DP_SINK_PRIORITY_PREFIX = "bluetooth_a2dp_sink_priority_";
         /** {@hide} */
         public static final String
-                BLUETOOTH_A2DP_SRC_PRIORITY_PREFIX = "bluetooth_a2dp_src_priority_";
-        /** {@hide} */
-        public static final String
                 BLUETOOTH_INPUT_DEVICE_PRIORITY_PREFIX = "bluetooth_input_device_priority_";
         /** {@hide} */
         public static final String
@@ -6984,14 +6280,6 @@ public final class Settings {
          */
         public static final String getBluetoothA2dpSinkPriorityKey(String address) {
             return BLUETOOTH_A2DP_SINK_PRIORITY_PREFIX + address.toUpperCase(Locale.ROOT);
-        }
-
-        /**
-         * Get the key that retrieves a bluetooth a2dp src's priority.
-         * @hide
-         */
-        public static final String getBluetoothA2dpSrcPriorityKey(String address) {
-            return BLUETOOTH_A2DP_SRC_PRIORITY_PREFIX + address.toUpperCase(Locale.ROOT);
         }
 
         /**
@@ -7103,24 +6391,6 @@ public final class Settings {
          * @hide
          */
         public static final String LOW_POWER_MODE_TRIGGER_LEVEL = "low_power_trigger_level";
-
-        /**
-         * Whether to sound when charger power is connected/disconnected
-         * @hide
-         */
-        public static final String POWER_NOTIFICATIONS_ENABLED = "power_notifications_enabled";
-
-        /**
-         * Whether to vibrate when charger power is connected/disconnected
-         * @hide
-         */
-        public static final String POWER_NOTIFICATIONS_VIBRATE = "power_notifications_vibrate";
-
-        /**
-         * URI for power notification sounds
-         * @hide
-         */
-        public static final String POWER_NOTIFICATIONS_RINGTONE = "power_notifications_ringtone";
 
          /**
          * If 1, the activity manager will aggressively finish activities and
@@ -7334,7 +6604,6 @@ public final class Settings {
         public static final String[] SETTINGS_TO_BACKUP = {
             BUGREPORT_IN_POWER_MENU,
             STAY_ON_WHILE_PLUGGED_IN,
-            WAKE_WHEN_PLUGGED_OR_UNPLUGGED,
             AUTO_TIME,
             AUTO_TIME_ZONE,
             POWER_SOUNDS_ENABLED,
@@ -7677,19 +6946,6 @@ public final class Settings {
          */
         public static final String[] MULTI_SIM_USER_PREFERRED_SUBS = {"user_preferred_sub1",
                 "user_preferred_sub2","user_preferred_sub3"};
-        /**
-          * Subscription to be used decide priority sub on a multi sim device. The supported values
-          * are 0 = SUB1, 1 = SUB2, 2 = SUB3.
-          * @hide
-          */
-        public static final String MULTI_SIM_PRIORITY_SUBSCRIPTION = "multi_sim_priority";
-
-        /**
-          * To know the status of tune away. The supported values
-          * are false = disable, true = enable.
-          * @hide
-          */
-        public static final String TUNE_AWAY_STATUS = "tune_away";
     }
 
     /**

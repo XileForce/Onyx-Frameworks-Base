@@ -67,7 +67,6 @@ import java.util.Objects;
  */
 final class ActivityRecord {
     static final String TAG = ActivityManagerService.TAG;
-    static final String TAG_TIMELINE = "Timeline";
     static final boolean DEBUG_SAVED_STATE = ActivityStackSupervisor.DEBUG_SAVED_STATE;
     final public static String RECENTS_PACKAGE_NAME = "com.android.systemui.recent";
 
@@ -969,8 +968,6 @@ final class ActivityRecord {
                 service.scheduleAppGcsLocked();
             }
         }
-        Log.i(TAG_TIMELINE, "Timeline: Activity_windows_visible id: "
-            + this + " time:" + SystemClock.uptimeMillis());
     }
 
     public void windowsGone() {

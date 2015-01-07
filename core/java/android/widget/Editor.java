@@ -2760,36 +2760,21 @@ public class Editor {
                 suggestions[suggestionInfo.suggestionIndex] = originalText;
 
                 // Restore previous SuggestionSpans
-                final int realSuggestionLength = mTextView.getText().toString().length();
-                int lengthDifference = suggestion.length() - (spanEnd - spanStart);
-                final int realSuggestionDiff = realSuggestionLength - (spanEnd - spanStart);
-
-                if (realSuggestionDiff < lengthDifference) {
-                    lengthDifference = realSuggestionDiff;
-                }
-
+                final int lengthDifference = suggestion.length() - (spanEnd - spanStart);
                 for (int i = 0; i < length; i++) {
                     // Only spans that include the modified region make sense after replacement
                     // Spans partially included in the replaced region are removed, there is no
                     // way to assign them a valid range after replacement
                     if (suggestionSpansStarts[i] <= spanStart &&
                             suggestionSpansEnds[i] >= spanEnd) {
-                        // When the SpansEnd beyond the length of mTextView here should avoid it.
-                        int nTextLen = mTextView.getText().length();
-                        int spansEnd = suggestionSpansEnds[i] + lengthDifference;
-                        int realSpansEnd = spansEnd > nTextLen ? nTextLen : spansEnd;
                         mTextView.setSpan_internal(suggestionSpans[i], suggestionSpansStarts[i],
-                                realSpansEnd, suggestionSpansFlags[i]);
+                                suggestionSpansEnds[i] + lengthDifference, suggestionSpansFlags[i]);
                     }
                 }
 
                 // Move cursor at the end of the replaced word
                 final int newCursorPosition = spanEnd + lengthDifference;
-                // When the SpansEnd beyond the length of mTextView here should avoid it.
-                int textLen = mTextView.getText().length();
-                int realNewCursorPosition = newCursorPosition > textLen ? textLen
-                        : newCursorPosition;
-                mTextView.setCursorPosition_internal(realNewCursorPosition, realNewCursorPosition);
+                mTextView.setCursorPosition_internal(newCursorPosition, newCursorPosition);
             }
 
             hide();
@@ -3302,9 +3287,7 @@ public class Editor {
 
         protected void dismiss() {
             mIsDragging = false;
-            if (mContainer.isShowing()) {
-                mContainer.dismiss();
-            }
+            mContainer.dismiss();
             onDetached();
         }
 

@@ -21,8 +21,6 @@ import android.annotation.SdkConstant;
 import android.annotation.SdkConstant.SdkConstantType;
 import android.annotation.SystemApi;
 import android.app.PendingIntent;
-import android.app.ProfileGroup;
-import android.app.ProfileManager;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.Context;
@@ -43,14 +41,12 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.ServiceManager;
-import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
 
 import java.util.HashMap;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 
 /**
@@ -68,8 +64,8 @@ public class AudioManager {
     private final boolean mUseFixedVolume;
     private final Binder mToken = new Binder();
     private static String TAG = "AudioManager";
-    private final ProfileManager mProfileManager;
     AudioPortEventHandler mAudioPortEventHandler;
+
     /**
      * Broadcast intent, a hint for applications that audio is about to become
      * 'noisy' due to a change in audio outputs. For example, this intent may
@@ -331,32 +327,6 @@ public class AudioManager {
     public static final String ACTION_USB_AUDIO_DEVICE_PLUG =
             "android.media.action.USB_AUDIO_DEVICE_PLUG";
 
-    /**
-     * @hide Broadcast intent when RemoteControlClient list is updated.
-     */
-    @SdkConstant(SdkConstantType.BROADCAST_INTENT_ACTION)
-    public static final String RCC_CHANGED_ACTION =
-                "org.codeaurora.bluetooth.RCC_CHANGED_ACTION";
-
-    /**
-     * @hide Used for sharing the calling package name
-     */
-    public static final String EXTRA_CALLING_PACKAGE_NAME =
-            "org.codeaurora.bluetooth.EXTRA_CALLING_PACKAGE_NAME";
-
-    /**
-     * @hide Used for sharing the focus changed value
-     */
-    public static final String EXTRA_FOCUS_CHANGED_VALUE =
-            "org.codeaurora.bluetooth.EXTRA_FOCUS_CHANGED_VALUE";
-
-    /**
-     * @hide Used for sharing the availability changed value
-     */
-    public static final String EXTRA_AVAILABLITY_CHANGED_VALUE =
-            "org.codeaurora.bluetooth.EXTRA_AVAILABLITY_CHANGED_VALUE";
-
-
     /** The audio stream for phone calls */
     public static final int STREAM_VOICE_CALL = AudioSystem.STREAM_VOICE_CALL;
     /** The audio stream for system sounds */
@@ -377,8 +347,6 @@ public class AudioManager {
     public static final int STREAM_DTMF = AudioSystem.STREAM_DTMF;
     /** @hide The audio stream for text to speech (TTS) */
     public static final int STREAM_TTS = AudioSystem.STREAM_TTS;
-    /** @hide The audio stream for incall music delivery */
-    public static final int STREAM_INCALL_MUSIC = AudioSystem.STREAM_INCALL_MUSIC;
     /** Number of audio streams */
     /**
      * @deprecated Use AudioSystem.getNumStreamTypes() instead
@@ -397,8 +365,7 @@ public class AudioManager {
         7,  // STREAM_BLUETOOTH_SCO
         7,  // STREAM_SYSTEM_ENFORCED
         11, // STREAM_DTMF
-        11,  // STREAM_TTS
-        4   // STREAM_INCALL_MUSIC
+        11  // STREAM_TTS
     };
 
     /**
@@ -621,7 +588,6 @@ public class AudioManager {
         mAudioPortEventHandler = new AudioPortEventHandler(this);
         mUseFixedVolume = mContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_useFixedVolume);
-        mProfileManager = (ProfileManager) context.getSystemService(Context.PROFILE_SERVICE);
     }
 
     private static IAudioService getService()
@@ -1278,26 +1244,6 @@ public class AudioManager {
      * current ringer mode that can be queried via {@link #getRingerMode()}.
      */
     public boolean shouldVibrate(int vibrateType) {
-        String packageName = mContext.getPackageName();
-        // Don't apply profiles for "android" context, as these could
-        // come from the NotificationManager, and originate from a real package.
-        if (!packageName.equals("android")) {
-            ProfileGroup profileGroup = mProfileManager.getActiveProfileGroup(packageName);
-            if (profileGroup != null) {
-                Log.v(TAG, "shouldVibrate, group: " + profileGroup.getUuid()
-                        + " mode: " + profileGroup.getVibrateMode());
-                switch (profileGroup.getVibrateMode()) {
-                    case OVERRIDE :
-                        return true;
-                    case SUPPRESS :
-                        return false;
-                    case DEFAULT :
-                    // Drop through
-                }
-            }
-        } else {
-            Log.v(TAG, "Not applying override for 'android' package");
-        }
         IAudioService service = getService();
         try {
             return service.shouldVibrate(vibrateType);
@@ -1761,38 +1707,6 @@ public class AudioManager {
      */
     public static final int MODE_IN_COMMUNICATION   = AudioSystem.MODE_IN_COMMUNICATION;
 
-    /* Calls states for Voice calls */
-    /**
-     * @hide Call state for inactive call state.
-     */
-    public static final int CALL_INACTIVE         = AudioSystem.CALL_INACTIVE;
-    /**
-     * @hide Call state for active call state.
-     */
-    public static final int CALL_ACTIVE           = AudioSystem.CALL_ACTIVE;
-    /**
-     * @hide Call state for hold call state.
-     */
-    public static final int CALL_HOLD             = AudioSystem.CALL_HOLD;
-    /**
-     * @hide Call state for local call hold state.
-     */
-    public static final int CALL_LOCAL_HOLD       = AudioSystem.CALL_LOCAL_HOLD;
-    /* Key used in setParameters for VSID and Call_state */
-    /**
-     * @hide Key for vsid used in setParameters.
-     */
-    public static final String VSID_KEY           = AudioSystem.VSID_KEY;
-
-    /**
-     * @hide Key for call_state used in setParameters.
-     */
-    public static final String CALL_STATE_KEY     = AudioSystem.CALL_STATE_KEY;
-
-    /**
-     * @hide Key for all_call_states used in getParameters.
-     */
-    public static final String ALL_CALL_STATES_KEY     = AudioSystem.ALL_CALL_STATES_KEY;
     /* Routing bits for setRouting/getRouting API */
     /**
      * Routing audio output to earpiece
@@ -2458,7 +2372,6 @@ public class AudioManager {
 
     //====================================================================
     // Remote Control
-
     /**
      * Register a component to be the sole receiver of MEDIA_BUTTON intents.
      * @param eventReceiver identifier of a {@link android.content.BroadcastReceiver}
@@ -2477,18 +2390,8 @@ public class AudioManager {
                     "receiver and context package names don't match");
             return;
         }
-
-        IAudioService service = getService();
-        try {
-            service.addMediaPlayerAndUpdateRemoteController(
-                                    eventReceiver.getPackageName());
-        } catch (RemoteException e) {
-            Log.e(TAG, "Error in calling Audioservice interface " +
-                        "addMediaPlayerAndUpdateRemoteController()" + e);
-        }
         // construct a PendingIntent for the media button and register it
         Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
-        mediaButtonIntent.addFlags(mediaButtonIntent.FLAG_RECEIVER_FOREGROUND);
         //     the associated intent will be handled by the component being registered
         mediaButtonIntent.setComponent(eventReceiver);
         PendingIntent pi = PendingIntent.getBroadcast(mContext,
@@ -2625,13 +2528,6 @@ public class AudioManager {
             return false;
         }
         rctlr.startListeningToSessions();
-        IAudioService service = getService();
-        try {
-            service.updateRemoteControllerOnExistingMediaPlayers();
-        } catch (RemoteException e) {
-            Log.e(TAG, "Error in calling Audio service interface" +
-                "updateRemoteControllerOnExistingMediaPlayers() due to " + e);
-        }
         return true;
     }
 
@@ -2800,52 +2696,6 @@ public class AudioManager {
         }
     }
 
-    /**
-     * @hide
-     * Request the user of a RemoteControlClient to play the requested item.
-     * @param generationId the RemoteControlClient generation counter for which this request is
-     *     issued.
-     * @param uid uid of the song to be played.
-     * @scope scope of the file system to use
-     */
-    public void setRemoteControlClientPlayItem(long uid, int scope) {
-        IAudioService service = getService();
-        try {
-            service.setRemoteControlClientPlayItem(uid, scope);
-        } catch (RemoteException e) {
-            Log.e(TAG, "Dead object in setRemoteControlClientPlayItem(" +
-                                                    uid + ", " + scope + ")", e);
-        }
-    }
-
-    /**
-     * @hide
-     * Request the user of a RemoteControlClient to provide with the now playing list entries.
-     * @param generationId the RemoteControlClient generation counter for which this request is
-     *     issued.
-     */
-    public void getRemoteControlClientNowPlayingEntries() {
-        IAudioService service = getService();
-        try {
-            service.getRemoteControlClientNowPlayingEntries();
-        } catch (RemoteException e) {
-            Log.e(TAG, "Dead object in getRemoteControlClientNowPlayingEntries(" + ")", e);
-        }
-    }
-
-    /**
-     * @hide
-     * Request the user of a RemoteControlClient to set the music player as current browsed player.
-     */
-    public void setRemoteControlClientBrowsedPlayer() {
-        Log.d(TAG, "setRemoteControlClientBrowsedPlayer: ");
-        IAudioService service = getService();
-        try {
-            service.setRemoteControlClientBrowsedPlayer();
-        } catch (RemoteException e) {
-            Log.e(TAG, "Dead object in setRemoteControlClientBrowsedPlayer(" + ")", e);
-        }
-    }
 
     /**
      *  @hide

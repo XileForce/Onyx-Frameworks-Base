@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +29,6 @@ import android.content.Intent;
 import android.content.pm.IPackageManager;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.database.ContentObserver;
-import android.database.Cursor;
 import android.media.AudioService;
 import android.media.tv.TvInputManager;
 import android.os.Build;
@@ -47,7 +44,6 @@ import android.os.StrictMode;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserHandle;
-import android.provider.Settings;
 import android.service.dreams.DreamService;
 import android.util.DisplayMetrics;
 import android.util.EventLog;
@@ -71,7 +67,6 @@ import com.android.server.display.DisplayManagerService;
 import com.android.server.dreams.DreamManagerService;
 import com.android.server.fingerprint.FingerprintService;
 import com.android.server.hdmi.HdmiControlService;
-import com.android.server.gesture.GestureService;
 import com.android.server.input.InputManagerService;
 import com.android.server.job.JobSchedulerService;
 import com.android.server.lights.LightsManager;
@@ -84,7 +79,6 @@ import com.android.server.net.NetworkStatsService;
 import com.android.server.notification.NotificationManagerService;
 import com.android.server.os.SchedulingPolicyService;
 import com.android.server.pm.BackgroundDexOptService;
-import com.android.server.gesture.EdgeGestureService;
 import com.android.server.pm.Installer;
 import com.android.server.pm.LauncherAppsService;
 import com.android.server.pm.PackageManagerService;
@@ -105,15 +99,10 @@ import com.android.server.webkit.WebViewUpdateService;
 import com.android.server.wm.WindowManagerService;
 
 import dalvik.system.VMRuntime;
-import dalvik.system.PathClassLoader;
-import java.lang.reflect.Constructor;
 
 import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import dalvik.system.PathClassLoader;
-import java.lang.reflect.Constructor;
 
 public final class SystemServer {
     private static final String TAG = "SystemServer";
@@ -160,7 +149,6 @@ public final class SystemServer {
     // TODO: remove all of these references by improving dependency resolution and boot phases
     private Installer mInstaller;
     private PowerManagerService mPowerManagerService;
-    private AlarmManagerService mAlarmManagerService;
     private ActivityManagerService mActivityManagerService;
     private DisplayManagerService mDisplayManagerService;
     private PackageManagerService mPackageManagerService;
@@ -185,19 +173,6 @@ public final class SystemServer {
     public SystemServer() {
         // Check for factory test mode.
         mFactoryTestMode = FactoryTest.getMode();
-    }
-
-    private class AdbPortObserver extends ContentObserver {
-        public AdbPortObserver() {
-            super(null);
-        }
-        @Override
-        public void onChange(boolean selfChange) {
-            int adbPort = Settings.Secure.getInt(mContentResolver,
-                Settings.Secure.ADB_PORT, 0);
-            // setting this will control whether ADB runs on TCP/IP or USB
-            SystemProperties.set("service.adb.tcp.port", Integer.toString(adbPort));
-        }
     }
 
     private void run() {
@@ -432,7 +407,6 @@ public final class SystemServer {
         ConsumerIrService consumerIr = null;
         AudioService audioService = null;
         MmsServiceBroker mmsService = null;
-        ProfileManagerService profile = null;
 
         boolean disableStorage = SystemProperties.getBoolean("config.disable_storage", false);
         boolean disableMedia = SystemProperties.getBoolean("config.disable_media", false);
@@ -443,7 +417,6 @@ public final class SystemServer {
         boolean disableNonCoreServices = SystemProperties.getBoolean("config.disable_noncore", false);
         boolean disableNetwork = SystemProperties.getBoolean("config.disable_network", false);
         boolean isEmulator = SystemProperties.get("ro.kernel.qemu").equals("1");
-        boolean disableAtlas = SystemProperties.getBoolean("config.disable_atlas", false);
 
         try {
             Slog.i(TAG, "Reading configuration...");
@@ -486,7 +459,7 @@ public final class SystemServer {
             consumerIr = new ConsumerIrService(context);
             ServiceManager.addService(Context.CONSUMER_IR_SERVICE, consumerIr);
 
-            mAlarmManagerService = mSystemServiceManager.startService(AlarmManagerService.class);
+            mSystemServiceManager.startService(AlarmManagerService.class);
             alarm = IAlarmManager.Stub.asInterface(
                     ServiceManager.getService(Context.ALARM_SERVICE));
 
@@ -544,8 +517,6 @@ public final class SystemServer {
         LockSettingsService lockSettings = null;
         AssetAtlasService atlas = null;
         MediaRouterService mediaRouter = null;
-        EdgeGestureService edgeGestureService = null;
-        GestureService gestureService = null;
 
         // Bring up services needed for UI.
         if (mFactoryTestMode != FactoryTest.FACTORY_TEST_LOW_LEVEL) {
@@ -575,23 +546,6 @@ public final class SystemServer {
             reportWtf("making display ready", e);
         }
 
-        if (mFactoryTestMode != FactoryTest.FACTORY_TEST_LOW_LEVEL) {
-            if (!disableStorage &&
-                !"0".equals(SystemProperties.get("system_init.startmountservice"))) {
-                try {
-                    /*
-                     * NotificationManagerService is dependant on MountService,
-                     * (for media / usb notifications) so we must start MountService first.
-                     */
-                    Slog.i(TAG, "Mount Service");
-                    mountService = new MountService(context);
-                    ServiceManager.addService("mount", mountService);
-                } catch (Throwable e) {
-                    reportWtf("starting Mount Service", e);
-                }
-            }
-        }
-
         try {
             mPackageManagerService.performBootDexOpt();
         } catch (Throwable e) {
@@ -607,6 +561,21 @@ public final class SystemServer {
         }
 
         if (mFactoryTestMode != FactoryTest.FACTORY_TEST_LOW_LEVEL) {
+            if (!disableStorage &&
+                !"0".equals(SystemProperties.get("system_init.startmountservice"))) {
+                try {
+                    /*
+                     * NotificationManagerService is dependant on MountService,
+                     * (for media / usb notifications) so we must start MountService first.
+                     */
+                    Slog.i(TAG, "Mount Service");
+                    mountService = new MountService(context);
+                    ServiceManager.addService("mount", mountService);
+                } catch (Throwable e) {
+                    reportWtf("starting Mount Service", e);
+                }
+            }
+
             if (!disableNonCoreServices) {
                 try {
                     Slog.i(TAG,  "LockSettingsService");
@@ -723,12 +692,6 @@ public final class SystemServer {
                 } catch (Throwable e) {
                     reportWtf("starting Service Discovery Service", e);
                 }
-                try {
-                    Slog.i(TAG, "DPM Service");
-                    startDpmService(context);
-                } catch (Throwable e) {
-                    reportWtf("starting DpmService", e);
-                }
             }
 
             if (!disableNonCoreServices) {
@@ -815,16 +778,6 @@ public final class SystemServer {
                     ServiceManager.addService(Context.WALLPAPER_SERVICE, wallpaper);
                 } catch (Throwable e) {
                     reportWtf("starting Wallpaper Service", e);
-                }
-            }
-
-            if (!disableNonCoreServices) {
-                try {
-                    Slog.i(TAG, "Profile Manager");
-                    profile = new ProfileManagerService(context);
-                    ServiceManager.addService(Context.PROFILE_SERVICE, profile);
-                } catch (Throwable e) {
-                    reportWtf("Failure starting Profile Manager", e);
                 }
             }
 
@@ -943,24 +896,13 @@ public final class SystemServer {
                 mSystemServiceManager.startService(DreamManagerService.class);
             }
 
-            if (!disableNonCoreServices && !disableAtlas) {
+            if (!disableNonCoreServices) {
                 try {
                     Slog.i(TAG, "Assets Atlas Service");
                     atlas = new AssetAtlasService(context);
                     ServiceManager.addService(AssetAtlasService.ASSET_ATLAS_SERVICE, atlas);
                 } catch (Throwable e) {
                     reportWtf("starting AssetAtlasService", e);
-                }
-            }
-
-            if (context.getResources().getBoolean(
-                    com.android.internal.R.bool.config_enableGestureService)) {
-                try {
-                    Slog.i(TAG, "Gesture Sensor Service");
-                    gestureService = new GestureService(context, inputManager);
-                    ServiceManager.addService("gesture", gestureService);
-                } catch (Throwable e) {
-                    Slog.e(TAG, "Failure starting Gesture Sensor Service", e);
                 }
             }
 
@@ -1003,50 +945,11 @@ public final class SystemServer {
             }
 
             mSystemServiceManager.startService(LauncherAppsService.class);
-
-            boolean isWipowerEnabled = SystemProperties.getBoolean("ro.bluetooth.wipower", false);
-
-            if (isWipowerEnabled) {
-                try {
-                    final String WBC_SERVICE_NAME = "wbc_service";
-                    Slog.i(TAG, "WipowerBatteryControl Service");
-
-                    PathClassLoader wbcClassLoader =
-                        new PathClassLoader("/system/framework/com.quicinc.wbc.jar:/system/framework/com.quicinc.wbcservice.jar",
-                                            ClassLoader.getSystemClassLoader());
-                    Class wbcClass = wbcClassLoader.loadClass("com.quicinc.wbcservice.WbcService");
-                    Constructor<Class> ctor = wbcClass.getConstructor(Context.class);
-                    Object wbcObject = ctor.newInstance(context);
-                    Slog.d(TAG, "Successfully loaded WbcService class");
-                    ServiceManager.addService(WBC_SERVICE_NAME, (IBinder) wbcObject);
-                } catch (Throwable e) {
-                    reportWtf("starting WipowerBatteryControl Service", e);
-                }
-            } else {
-                Slog.d(TAG, "Wipower not supported");
-            }
-
-            try {
-                Slog.i(TAG, "EdgeGesture service");
-                edgeGestureService = new EdgeGestureService(context, inputManager);
-                ServiceManager.addService("edgegestureservice", edgeGestureService);
-            } catch (Throwable e) {
-                Slog.e(TAG, "Failure starting EdgeGesture service", e);
-            }
         }
 
         if (!disableNonCoreServices) {
             mSystemServiceManager.startService(MediaProjectionManagerService.class);
         }
-
-        // make sure the ADB_ENABLED setting value matches the secure property value
-        Settings.Secure.putInt(mContentResolver, Settings.Secure.ADB_PORT,
-                Integer.parseInt(SystemProperties.get("service.adb.tcp.port", "-1")));
-
-        // register observer to listen for settings changes
-        mContentResolver.registerContentObserver(
-            Settings.Secure.getUriFor(Settings.Secure.ADB_PORT),
-            false, new AdbPortObserver());
 
         // Before things start rolling, be sure we have decided whether
         // we are in safe mode.
@@ -1121,22 +1024,6 @@ public final class SystemServer {
             mDisplayManagerService.systemReady(safeMode, mOnlyCore);
         } catch (Throwable e) {
             reportWtf("making Display Manager Service ready", e);
-        }
-
-        if (edgeGestureService != null) {
-            try {
-                edgeGestureService.systemReady();
-            } catch (Throwable e) {
-                reportWtf("making EdgeGesture service ready", e);
-            }
-        }
-
-        if (gestureService != null) {
-            try {
-                gestureService.systemReady();
-            } catch (Throwable e) {
-                reportWtf("making Gesture Sensor Service ready", e);
-            }
         }
 
         // These are needed to propagate to the runnable below.
@@ -1304,33 +1191,5 @@ public final class SystemServer {
                     "com.android.systemui.SystemUIService"));
         //Slog.d(TAG, "Starting service: " + intent);
         context.startServiceAsUser(intent, UserHandle.OWNER);
-    }
-
-    private static final void startDpmService(Context context) {
-        try {
-            Object dpmObj = null;
-            int dpmFeature = SystemProperties.getInt("persist.dpm.feature", 0);
-            Slog.i(TAG, "DPM configuration set to " + dpmFeature);
-
-            if (dpmFeature > 0 && dpmFeature < 8) {
-                PathClassLoader dpmClassLoader =
-                    new PathClassLoader("/system/framework/com.qti.dpmframework.jar",
-                            ClassLoader.getSystemClassLoader());
-                Class dpmClass = dpmClassLoader.loadClass("com.qti.dpm.DpmService");
-                Constructor dpmConstructor = dpmClass.getConstructor(
-                        new Class[] {Context.class});
-                dpmObj = dpmConstructor.newInstance(context);
-                try {
-                    if(dpmObj != null && (dpmObj instanceof IBinder)) {
-                        ServiceManager.addService("dpmservice", (IBinder)dpmObj);
-                        Slog.i(TAG, "Created DPM Service");
-                    }
-                } catch (Exception e) {
-                    Slog.i(TAG, "starting DPM Service", e);
-                }
-            }
-        } catch (Throwable e) {
-            Slog.i(TAG, "starting DPM Service", e);
-        }
     }
 }

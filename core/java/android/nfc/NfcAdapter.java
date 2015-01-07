@@ -1,7 +1,4 @@
 /*
- * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
- * Not a Contribution.
- *
  * Copyright (C) 2010 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +23,6 @@ import android.annotation.SdkConstant.SdkConstantType;
 import android.annotation.SystemApi;
 import android.app.Activity;
 import android.app.ActivityThread;
-import android.app.AppOpsManager;
 import android.app.OnActivityPausedListener;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -317,7 +313,6 @@ public final class NfcAdapter {
     final Context mContext;
     final HashMap<NfcUnlockHandler, INfcUnlockHandler> mNfcUnlockHandlers;
     final Object mLock;
-    private final AppOpsManager mAppOps;
 
     /**
      * A callback to be invoked when the system finds a tag while the foreground activity is
@@ -539,7 +534,6 @@ public final class NfcAdapter {
         mNfcActivityManager = new NfcActivityManager(this);
         mNfcUnlockHandlers = new HashMap<NfcUnlockHandler, INfcUnlockHandler>();
         mLock = new Object();
-        mAppOps = (AppOpsManager)context.getSystemService(Context.APP_OPS_SERVICE);
     }
 
     /**
@@ -671,9 +665,6 @@ public final class NfcAdapter {
      */
     @SystemApi
     public boolean enable() {
-        if (mAppOps.noteOp(AppOpsManager.OP_NFC_CHANGE) != AppOpsManager.MODE_ALLOWED){
-            return false;
-        }
         try {
             return sService.enable();
         } catch (RemoteException e) {

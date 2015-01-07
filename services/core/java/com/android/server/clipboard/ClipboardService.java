@@ -49,7 +49,6 @@ import android.util.SparseArray;
 
 import java.util.HashSet;
 import java.util.List;
-import com.android.services.SecurityBridge.api.ClipboardManagerMonitor;
 
 /**
  * Implementation of the clipboard for copy and paste.
@@ -64,9 +63,6 @@ public class ClipboardService extends IClipboard.Stub {
     private final PackageManager mPm;
     private final AppOpsManager mAppOps;
     private final IBinder mPermissionOwner;
-
-    private static final String SECURITY_BRIDGE_NAME = "com.android.services.SecurityBridge.core.ClipboardManagerSB";
-    private ClipboardManagerMonitor mSecurityBridge;
 
     private class ListenerInfo {
         final int mUid;
@@ -124,23 +120,6 @@ public class ClipboardService extends IClipboard.Stub {
                 }
             }
         }, userFilter);
-
-        Object bridgeObject;
-
-        try {
-
-            /*
-             * load and create the security bridge
-             */
-            bridgeObject = getClass().getClassLoader().loadClass(SECURITY_BRIDGE_NAME).newInstance();
-            mSecurityBridge = (ClipboardManagerMonitor)bridgeObject;
-
-        } catch (Exception e){
-
-            Slog.w(TAG, "No security bridge jar found, using default");
-            mSecurityBridge = new ClipboardManagerMonitor();
-        }
-
     }
 
     @Override
@@ -154,6 +133,7 @@ public class ClipboardService extends IClipboard.Stub {
             }
             throw e;
         }
+        
     }
 
     private PerUserClipboard getClipboard() {
@@ -191,7 +171,6 @@ public class ClipboardService extends IClipboard.Stub {
             final int userId = UserHandle.getUserId(callingUid);
             PerUserClipboard clipboard = getClipboard(userId);
             revokeUris(clipboard);
-            mSecurityBridge.notifyCopy(Binder.getCallingUid(), clip);
             setPrimaryClipInternal(clipboard, clip);
             List<UserInfo> related = getRelatedProfiles(userId);
             if (related != null) {
@@ -264,7 +243,7 @@ public class ClipboardService extends IClipboard.Stub {
             Binder.restoreCallingIdentity(ident);
         }
     }
-
+    
     public ClipData getPrimaryClip(String pkg) {
         synchronized (this) {
             if (mAppOps.noteOp(AppOpsManager.OP_READ_CLIPBOARD, Binder.getCallingUid(),
@@ -272,14 +251,7 @@ public class ClipboardService extends IClipboard.Stub {
                 return null;
             }
             addActiveOwnerLocked(Binder.getCallingUid(), pkg);
-            ClipData clip = getClipboard().primaryClip;
-            if (clip != null) {
-                if (true != mSecurityBridge.approvePasteRequest(Binder.getCallingUid(), clip)) {
-                    clip = null;
-                }
-            }
-
-            return clip;
+            return getClipboard().primaryClip;
         }
     }
 
@@ -300,13 +272,7 @@ public class ClipboardService extends IClipboard.Stub {
                     callingPackage) != AppOpsManager.MODE_ALLOWED) {
                 return false;
             }
-
-            boolean hasClip = false;
-            if (getClipboard().primaryClip != null) {
-                hasClip = mSecurityBridge.approvePasteRequest(Binder.getCallingUid(), getClipboard().primaryClip);
-            }
-
-            return hasClip;
+            return getClipboard().primaryClip != null;
         }
     }
 

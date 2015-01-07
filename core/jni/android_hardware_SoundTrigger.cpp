@@ -267,7 +267,6 @@ void JNISoundTriggerCallback::onRecognitionEvent(struct sound_trigger_recognitio
                                 jAudioFormat, jData, jExtras);
         env->DeleteLocalRef(jAudioFormat);
         env->DeleteLocalRef(jData);
-        env->DeleteLocalRef(jExtras);
     } else {
         jEvent = env->NewObject(gRecognitionEventClass, gRecognitionEventCstor,
                                 event->status, event->model, event->capture_available,

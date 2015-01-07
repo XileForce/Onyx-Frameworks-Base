@@ -386,26 +386,28 @@ final class WindowState implements WindowManagerPolicy.WindowState {
             mAttachedWindow = attachedWindow;
             if (WindowManagerService.DEBUG_ADD_REMOVE) Slog.v(TAG, "Adding " + this + " to " + mAttachedWindow);
 
-            final WindowList childWindows = mAttachedWindow.mChildWindows;
-            final int numChildWindows = childWindows.size();
-            if (numChildWindows == 0) {
-                childWindows.add(this);
+            int children_size = mAttachedWindow.mChildWindows.size();
+            if (children_size == 0) {
+                mAttachedWindow.mChildWindows.add(this);
             } else {
-                boolean added = false;
-                for (int i = 0; i < numChildWindows; i++) {
-                    final int childSubLayer = childWindows.get(i).mSubLayer;
-                    if (mSubLayer < childSubLayer
-                            || (mSubLayer == childSubLayer && childSubLayer < 0)) {
-                        // We insert the child window into the list ordered by the sub-layer. For
-                        // same sub-layers, the negative one should go below others; the positive
-                        // one should go above others.
-                        childWindows.add(i, this);
-                        added = true;
+                for (int i = 0; i < children_size; i++) {
+                    WindowState child = (WindowState)mAttachedWindow.mChildWindows.get(i);
+                    if (this.mSubLayer < child.mSubLayer) {
+                        mAttachedWindow.mChildWindows.add(i, this);
                         break;
+                    } else if (this.mSubLayer > child.mSubLayer) {
+                        continue;
+                    }
+
+                    if (this.mBaseLayer <= child.mBaseLayer) {
+                        mAttachedWindow.mChildWindows.add(i, this);
+                        break;
+                    } else {
+                        continue;
                     }
                 }
-                if (!added) {
-                    childWindows.add(this);
+                if (children_size == mAttachedWindow.mChildWindows.size()) {
+                    mAttachedWindow.mChildWindows.add(this);
                 }
             }
 

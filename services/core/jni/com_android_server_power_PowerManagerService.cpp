@@ -163,17 +163,6 @@ static void nativeCpuBoost(JNIEnv *env, jobject clazz, jint duration) {
     }
 }
 
-<<<<<<< HEAD
-=======
-static void nativeSetPowerProfile(JNIEnv *env, jobject clazz, jint profile) {
-    // Tell the Power HAL to select a power profile
-    if (gPowerModule && gPowerModule->powerHint) {
-        gPowerModule->powerHint(gPowerModule, POWER_HINT_SET_PROFILE, (void *)(static_cast<int64_t>(profile)));
-    }
-}
-
-
->>>>>>> dbab953b7cc17e03fc6e5454762717362da01078
 // ----------------------------------------------------------------------------
 
 static JNINativeMethod gPowerManagerServiceMethods[] = {
@@ -192,11 +181,6 @@ static JNINativeMethod gPowerManagerServiceMethods[] = {
             (void*) nativeSendPowerHint },
     { "nativeCpuBoost", "(I)V",
             (void*) nativeCpuBoost },
-<<<<<<< HEAD
-=======
-    { "nativeSetPowerProfile", "(I)V",
-            (void*) nativeSetPowerProfile },
->>>>>>> dbab953b7cc17e03fc6e5454762717362da01078
 };
 
 #define FIND_CLASS(var, className) \

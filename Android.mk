@@ -73,7 +73,6 @@ LOCAL_SRC_FILES += \
 	core/java/android/app/IInstrumentationWatcher.aidl \
 	core/java/android/app/INotificationManager.aidl \
 	core/java/android/app/IProcessObserver.aidl \
-	core/java/android/app/IProfileManager.aidl \
 	core/java/android/app/ISearchManager.aidl \
 	core/java/android/app/ISearchManagerCallback.aidl \
 	core/java/android/app/IServiceConnection.aidl \
@@ -95,15 +94,11 @@ LOCAL_SRC_FILES += \
 	core/java/android/app/backup/IRestoreObserver.aidl \
 	core/java/android/app/backup/IRestoreSession.aidl \
 	core/java/android/app/usage/IUsageStatsManager.aidl \
-	core/java/android/wipower/IWipower.aidl \
-	core/java/android/wipower/IWipowerManagerCallback.aidl \
 	core/java/android/bluetooth/IBluetooth.aidl \
-	core/java/android/bluetooth/IQBluetooth.aidl \
 	core/java/android/bluetooth/IBluetoothA2dp.aidl \
 	core/java/android/bluetooth/IBluetoothA2dpSink.aidl \
 	core/java/android/bluetooth/IBluetoothAvrcpController.aidl \
 	core/java/android/bluetooth/IBluetoothCallback.aidl \
-	core/java/android/bluetooth/IQBluetoothAdapterCallback.aidl \
 	core/java/android/bluetooth/IBluetoothHeadset.aidl \
 	core/java/android/bluetooth/IBluetoothHeadsetPhone.aidl \
 	core/java/android/bluetooth/IBluetoothHealth.aidl \
@@ -112,18 +107,13 @@ LOCAL_SRC_FILES += \
 	core/java/android/bluetooth/IBluetoothPan.aidl \
 	core/java/android/bluetooth/IBluetoothManager.aidl \
 	core/java/android/bluetooth/IBluetoothManagerCallback.aidl \
-	core/java/android/bluetooth/IQBluetoothManagerCallback.aidl \
 	core/java/android/bluetooth/IBluetoothPbap.aidl \
 	core/java/android/bluetooth/IBluetoothMap.aidl \
 	core/java/android/bluetooth/IBluetoothStateChangeCallback.aidl \
 	core/java/android/bluetooth/IBluetoothHeadsetClient.aidl \
-	core/java/android/bluetooth/IBluetoothHidDevice.aidl \
-	core/java/android/bluetooth/IBluetoothHidDeviceCallback.aidl \
 	core/java/android/bluetooth/IBluetoothGatt.aidl \
 	core/java/android/bluetooth/IBluetoothGattCallback.aidl \
 	core/java/android/bluetooth/IBluetoothGattServerCallback.aidl \
-	core/java/android/bluetooth/IBluetoothDun.aidl \
-	core/java/android/bluetooth/IBluetoothSap.aidl \
 	core/java/android/content/IClipboard.aidl \
 	core/java/android/content/IContentService.aidl \
 	core/java/android/content/IIntentReceiver.aidl \
@@ -238,10 +228,6 @@ LOCAL_SRC_FILES += \
 	core/java/android/service/voice/IVoiceInteractionService.aidl \
 	core/java/android/service/voice/IVoiceInteractionSession.aidl \
 	core/java/android/service/voice/IVoiceInteractionSessionService.aidl \
-	core/java/android/service/gesture/IEdgeGestureService.aidl \
-	core/java/android/service/gesture/IEdgeGestureActivationListener.aidl \
-	core/java/android/service/gesture/IEdgeGestureHostCallback.aidl \
-	core/java/android/service/gesture/IGestureService.aidl \
 	core/java/android/service/wallpaper/IWallpaperConnection.aidl \
 	core/java/android/service/wallpaper/IWallpaperEngine.aidl \
 	core/java/android/service/wallpaper/IWallpaperService.aidl \
@@ -314,8 +300,6 @@ LOCAL_SRC_FILES += \
 	location/java/android/location/IGeofenceProvider.aidl \
 	location/java/android/location/IGpsMeasurementsListener.aidl \
 	location/java/android/location/IGpsNavigationMessageListener.aidl \
-        location/java/android/location/IGeoFencer.aidl \
-        location/java/android/location/IGeoFenceListener.aidl \
 	location/java/android/location/IGpsStatusListener.aidl \
 	location/java/android/location/IGpsStatusProvider.aidl \
 	location/java/android/location/ILocationListener.aidl \
@@ -542,13 +526,10 @@ aidl_files := \
 	frameworks/base/core/java/android/speech/tts/Voice.aidl \
 	frameworks/base/core/java/android/app/usage/UsageEvents.aidl \
 	frameworks/base/core/java/android/app/Notification.aidl \
-	frameworks/base/core/java/android/app/NotificationGroup.aidl \
-	frameworks/base/core/java/android/app/Profile.aidl \
 	frameworks/base/core/java/android/app/WallpaperInfo.aidl \
 	frameworks/base/core/java/android/app/AppOpsManager.aidl \
 	frameworks/base/core/java/android/app/ActivityManager.aidl \
 	frameworks/base/core/java/android/app/PendingIntent.aidl \
-	frameworks/base/core/java/android/app/Profile.aidl \
 	frameworks/base/core/java/android/app/AlarmManager.aidl \
 	frameworks/base/core/java/android/app/SearchableInfo.aidl \
 	frameworks/base/core/java/android/app/job/JobParameters.aidl \

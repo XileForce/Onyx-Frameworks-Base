@@ -150,22 +150,4 @@ public class BridgePowerManager implements IPowerManager {
     public void cpuBoost(int duration) throws RemoteException {
         // pass for now
     }
-<<<<<<< HEAD
-=======
-
-    @Override
-    public void setKeyboardVisibility(boolean visible) {
-        // pass for now
-    }
-
-    @Override
-    public void setKeyboardLight(boolean on, int key) {
-        // pass for now
-    }
-
-    @Override
-    public void updateBlockedUids(int uid, boolean isBlocked) {
-        // pass for now.
-    }
->>>>>>> dbab953b7cc17e03fc6e5454762717362da01078
 }

@@ -43,14 +43,15 @@ public class EmergencyButton extends Button {
     KeyguardUpdateMonitorCallback mInfoCallback = new KeyguardUpdateMonitorCallback() {
 
         @Override
-        public void onSimStateChanged(long subId, State simState) {
+        public void onSimStateChanged(State simState) {
             int phoneState = KeyguardUpdateMonitor.getInstance(mContext).getPhoneState();
-            updateEmergencyCallButton(phoneState);
+            updateEmergencyCallButton(simState, phoneState);
         }
 
         @Override
         public void onPhoneStateChanged(int phoneState) {
-            updateEmergencyCallButton(phoneState);
+            State simState = KeyguardUpdateMonitor.getInstance(mContext).getSimState();
+            updateEmergencyCallButton(simState, phoneState);
         }
     };
     private LockPatternUtils mLockPatternUtils;
@@ -87,7 +88,8 @@ public class EmergencyButton extends Button {
             }
         });
         int phoneState = KeyguardUpdateMonitor.getInstance(mContext).getPhoneState();
-        updateEmergencyCallButton(phoneState);
+        State simState = KeyguardUpdateMonitor.getInstance(mContext).getSimState();
+        updateEmergencyCallButton(simState, phoneState);
     }
 
     /**
@@ -110,7 +112,7 @@ public class EmergencyButton extends Button {
         }
     }
 
-    private void updateEmergencyCallButton(int phoneState) {
+    private void updateEmergencyCallButton(State simState, int phoneState) {
         boolean enabled = false;
         if (mLockPatternUtils.isInCall()) {
             enabled = true; // always show "return to call" if phone is off-hook
@@ -122,8 +124,7 @@ public class EmergencyButton extends Button {
             } else {
                 // True if we need to show a secure screen (pin/pattern/SIM pin/SIM puk);
                 // hides emergency button on "Slide" screen if device is not secure.
-                enabled = mLockPatternUtils.isSecure() ||
-                        mContext.getResources().getBoolean(R.bool.config_showEmergencyButton);
+                enabled = mLockPatternUtils.isSecure();
             }
         }
         mLockPatternUtils.updateEmergencyCallButtonState(this, enabled, false);

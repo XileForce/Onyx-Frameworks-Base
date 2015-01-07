@@ -125,7 +125,7 @@ interface IWindowManager
     boolean inKeyguardRestrictedInputMode();
     void dismissKeyguard();
     void keyguardGoingAway(boolean disableWindowAnimations,
-            boolean keyguardGoingToNotificationShade, boolean keyguardShowingMedia);
+            boolean keyguardGoingToNotificationShade);
 
     void closeSystemDialogs(String reason);
 
@@ -231,12 +231,6 @@ interface IWindowManager
      * Device has a software navigation bar (separate from the status bar).
      */
     boolean hasNavigationBar();
-    boolean hasPermanentMenuKey();
-
-    /**
-     * Device needs a software navigation bar (because it has no hardware keys).
-     */
-    boolean needsNavigationBar();
 
     /**
      * Lock the device immediately with the specified options (can be null).

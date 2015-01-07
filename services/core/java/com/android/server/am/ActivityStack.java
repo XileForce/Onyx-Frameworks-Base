@@ -56,7 +56,6 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.AppGlobals;
-import android.app.AppOpsManager;
 import android.app.IActivityController;
 import android.app.ResultInfo;
 import android.app.ActivityManager.RunningTaskInfo;
@@ -1111,8 +1110,6 @@ final class ActivityStack {
             // When resuming an activity, require it to call requestVisibleBehind() again.
             mActivityContainer.mActivityDisplay.setVisibleBehindActivity(null);
         }
-
-        updatePrivacyGuardNotificationLocked(next);
     }
 
     private void setVisibile(ActivityRecord r, boolean visible) {
@@ -1243,9 +1240,6 @@ final class ActivityStack {
             final TaskRecord task = mTaskHistory.get(taskNdx);
             final ArrayList<ActivityRecord> activities = task.mActivities;
             for (int activityNdx = activities.size() - 1; activityNdx >= 0; --activityNdx) {
-                if(activityNdx >= activities.size()) {
-                    continue;
-                }
                 final ActivityRecord r = activities.get(activityNdx);
                 if (r.finishing) {
                     continue;
@@ -1601,12 +1595,8 @@ final class ActivityStack {
         mStackSupervisor.mGoingToSleepActivities.remove(next);
         next.sleeping = false;
         mStackSupervisor.mWaitingVisibleActivities.remove(next);
-        next.waitingVisible = false;
 
         if (DEBUG_SWITCH) Slog.v(TAG, "Resuming " + next);
-
-        // Some activities may want to alter the system power management
-        mStackSupervisor.mPm.activityResumed(next.intent);
 
         // If we are currently pausing an activity, then don't do anything
         // until that is done.
@@ -1696,8 +1686,6 @@ final class ActivityStack {
                 // previous should actually be hidden depending on whether the
                 // new one is found to be full-screen or not.
                 if (prev.finishing) {
-                    if(prev.waitingVisible)
-                        mStackSupervisor.mWaitingVisibleActivities.add(prev);
                     mWindowManager.setAppVisibility(prev.appToken, false);
                     if (DEBUG_SWITCH) Slog.v(TAG, "Not waiting for visible to hide: "
                             + prev + ", waitingVisible="
@@ -1837,9 +1825,6 @@ final class ActivityStack {
                     // Do over!
                     mStackSupervisor.scheduleResumeTopActivities();
                 }
-                if (next == mLastScreenshotActivity) {
-                    invalidateLastScreenshot();
-                }
                 if (mStackSupervisor.reportResumedActivityLocked(next)) {
                     mNoAnimActivities.clear();
                     if (DEBUG_STACK) mStackSupervisor.validateTopActivitiesLocked();
@@ -1976,29 +1961,6 @@ final class ActivityStack {
         }
         mTaskHistory.add(taskNdx, task);
         updateTaskMovement(task, true);
-    }
-
-    private final void updatePrivacyGuardNotificationLocked(ActivityRecord next) {
-
-        String privacyGuardPackageName = mStackSupervisor.mPrivacyGuardPackageName;
-        if (privacyGuardPackageName != null && privacyGuardPackageName.equals(next.packageName)) {
-            return;
-        }
-
-        boolean privacy = mService.mAppOpsService.getPrivacyGuardSettingForPackage(
-                next.app.uid, next.packageName);
-
-        if (privacyGuardPackageName != null && !privacy) {
-            Message msg = mService.mHandler.obtainMessage(
-                    ActivityManagerService.CANCEL_PRIVACY_NOTIFICATION_MSG, next.userId);
-            msg.sendToTarget();
-            mStackSupervisor.mPrivacyGuardPackageName = null;
-        } else if (privacy) {
-            Message msg = mService.mHandler.obtainMessage(
-                    ActivityManagerService.POST_PRIVACY_NOTIFICATION_MSG, next);
-            msg.sendToTarget();
-            mStackSupervisor.mPrivacyGuardPackageName = next.packageName;
-        }
     }
 
     final void startActivityLocked(ActivityRecord r, boolean newTask,
@@ -2310,7 +2272,7 @@ final class ActivityStack {
                     // In this case, we want to finish this activity
                     // and everything above it, so be sneaky and pretend
                     // like these are all in the reply chain.
-                    end = activities.size() - 1;
+                    end = numActivities - 1;
                 } else if (replyChainEnd < 0) {
                     end = i;
                 } else {
@@ -2848,7 +2810,6 @@ final class ActivityStack {
         mStackSupervisor.mStoppingActivities.remove(r);
         mStackSupervisor.mGoingToSleepActivities.remove(r);
         mStackSupervisor.mWaitingVisibleActivities.remove(r);
-        r.waitingVisible = false;
         if (mResumedActivity == r) {
             mResumedActivity = null;
         }
@@ -3049,7 +3010,6 @@ final class ActivityStack {
         // down to the max limit while they are still waiting to finish.
         mStackSupervisor.mFinishingActivities.remove(r);
         mStackSupervisor.mWaitingVisibleActivities.remove(r);
-        r.waitingVisible = false;
 
         // Remove any pending results.
         if (r.finishing && r.pendingResults != null) {
