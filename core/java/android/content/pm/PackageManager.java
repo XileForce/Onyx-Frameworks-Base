@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
+ *
  * Copyright (C) 2006 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -622,6 +625,14 @@ public abstract class PackageManager {
      * @hide
      */
     public static final int INSTALL_FAILED_VERSION_DOWNGRADE = -25;
+
+    /**
+     * Installation return code: this is passed to the {@link IPackageInstallObserver} by
+     * {@link #installPackage(android.net.Uri, IPackageInstallObserver, int)} if
+     * the package is from unknown sources but not trusted sources.
+     * @hide
+     */
+    public static final int INSTALL_FAILED_UNKNOWN_SOURCES = -26;
 
     /**
      * Installation parse return code: this is passed to the {@link IPackageInstallObserver} by
@@ -1674,6 +1685,20 @@ public abstract class PackageManager {
      */
     public static final String EXTRA_REQUEST_PERMISSION_PERMISSION_LIST
             = "android.content.pm.extra.PERMISSION_LIST";
+
+    /**
+     * Flag for {@link #setComponentProtectedSetting(android.content.ComponentName, boolean)}:
+     * This component or application has set to protected status
+     * @hide
+     */
+    public static final boolean COMPONENT_PROTECTED_STATUS = false;
+
+    /**
+     * Flag for {@link #setComponentProtectedSetting(android.content.ComponentName, boolean)}:
+     * This component or application has been explicitly set to visible status
+     * @hide
+     */
+    public static final boolean COMPONENT_VISIBLE_STATUS = true;
 
     /**
      * String extra for {@link PackageInstallObserver} in the 'extras' Bundle in case of
@@ -3884,6 +3909,12 @@ public abstract class PackageManager {
         return Environment.getDataDirectory().toString() + "/user/" + userId
                 + "/" + packageName;
     }
+ 
+    /**
+     * Update Component protection state
+     * @hide
+     */
+    public abstract void setComponentProtectedSetting(ComponentName componentName, boolean newState);
 
     /**
      * Adds a {@link CrossProfileIntentFilter}. After calling this method all intents sent from the

@@ -15,6 +15,7 @@
  */
 package com.android.keyguard;
 
+import android.app.Profile;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.telephony.TelephonyManager;
@@ -76,14 +77,23 @@ public class KeyguardSecurityModel {
 
     SecurityMode getSecurityMode() {
         KeyguardUpdateMonitor updateMonitor = KeyguardUpdateMonitor.getInstance(mContext);
-        final IccCardConstants.State simState = updateMonitor.getSimState();
+        IccCardConstants.State simState = IccCardConstants.State.UNKNOWN;
         SecurityMode mode = SecurityMode.None;
+        for (int i = 0; i < updateMonitor.getNumPhones(); i++) {
+            long subId = updateMonitor.getSubIdByPhoneId(i);
+            simState = updateMonitor.getSimState(subId);
+            if (simState == IccCardConstants.State.PIN_REQUIRED
+                || simState == IccCardConstants.State.PUK_REQUIRED) {
+                break;
+            }
+        }
+
         if (simState == IccCardConstants.State.PIN_REQUIRED) {
             mode = SecurityMode.SimPin;
         } else if (simState == IccCardConstants.State.PUK_REQUIRED
                 && mLockPatternUtils.isPukUnlockScreenEnable()) {
             mode = SecurityMode.SimPuk;
-        } else {
+        } else if (mLockPatternUtils.getActiveProfileLockMode() != Profile.LockMode.INSECURE) {
             final int security = mLockPatternUtils.getKeyguardStoredPasswordQuality();
             switch (security) {
                 case DevicePolicyManager.PASSWORD_QUALITY_NUMERIC:

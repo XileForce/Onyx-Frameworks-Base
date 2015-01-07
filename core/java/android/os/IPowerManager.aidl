@@ -58,6 +58,24 @@ interface IPowerManager
 
     // sets the attention light (used by phone app only)
     void setAttentionLight(boolean on, int color);
+<<<<<<< HEAD
 
     void cpuBoost(int duration);
+=======
+    // update the uids being synchronized by network socket request manager
+    void updateBlockedUids(int uid, boolean isBlocked);
+
+    void cpuBoost(int duration);
+
+    void setKeyboardVisibility(boolean visible);
+
+    void setKeyboardLight(boolean on, int key);
+
+	void wakeUpWithProximityCheck(long time);
+
+	boolean setPowerProfile(String profile);
+	String getPowerProfile();
+
+    void activityResumed(String componentName);
+>>>>>>> dbab953b7cc17e03fc6e5454762717362da01078
 }

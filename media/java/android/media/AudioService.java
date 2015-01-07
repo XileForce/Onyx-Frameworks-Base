@@ -159,6 +159,27 @@ public class AudioService extends IAudioService.Stub {
     // the platform type affects volume and silent mode behavior
     private final int mPlatformType;
 
+    private static final ArrayList<MediaPlayerInfo> mMediaPlayers =
+                                        new ArrayList<MediaPlayerInfo>();
+
+    private class MediaPlayerInfo {
+        private String mPackageName;
+        private boolean mIsfocussed;
+        public MediaPlayerInfo(String packageName, boolean isfocussed) {
+            mPackageName = packageName;
+            mIsfocussed = isfocussed;
+        }
+        public boolean isFocussed() {
+            return mIsfocussed;
+        }
+        public void setFocus(boolean focus) {
+            mIsfocussed = focus;
+        }
+        public String getPackageName() {
+            return mPackageName;
+        }
+    }
+
     private boolean isPlatformVoice() {
         return mPlatformType == PLATFORM_VOICE;
     }
@@ -484,6 +505,7 @@ public class AudioService extends IAudioService.Stub {
     int mFixedVolumeDevices = AudioSystem.DEVICE_OUT_HDMI |
             AudioSystem.DEVICE_OUT_DGTL_DOCK_HEADSET |
             AudioSystem.DEVICE_OUT_ANLG_DOCK_HEADSET |
+            AudioSystem.DEVICE_OUT_PROXY |
             AudioSystem.DEVICE_OUT_HDMI_ARC |
             AudioSystem.DEVICE_OUT_SPDIF |
             AudioSystem.DEVICE_OUT_AUX_LINE;
@@ -711,6 +733,64 @@ public class AudioService extends IAudioService.Stub {
                     Log.e(TAG, "Interrupted while waiting on volume handler.");
                 }
             }
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void addMediaPlayerAndUpdateRemoteController (String packageName) {
+        boolean playerToAdd = true;
+        if (mMediaPlayers.size() > 0) {
+            final Iterator<MediaPlayerInfo> rccIterator = mMediaPlayers.iterator();
+            while (rccIterator.hasNext()) {
+                final MediaPlayerInfo player = rccIterator.next();
+                if (packageName.equals(player.getPackageName())) {
+                    Log.e(TAG, "Player entry present, no need to add");
+                    playerToAdd = false;
+                    player.setFocus(true);
+                } else {
+                    Log.e(TAG, "Player: " + player.getPackageName()+ "Lost Focus");
+                    player.setFocus(false);
+                }
+            }
+        }
+        if (playerToAdd) {
+            Log.e(TAG, "Adding Player: " + packageName + " to available player list");
+            mMediaPlayers.add(new MediaPlayerInfo(packageName, true));
+        }
+        Intent intent = new Intent(AudioManager.RCC_CHANGED_ACTION);
+        intent.putExtra(AudioManager.EXTRA_CALLING_PACKAGE_NAME, packageName);
+        intent.putExtra(AudioManager.EXTRA_FOCUS_CHANGED_VALUE, true);
+        intent.putExtra(AudioManager.EXTRA_AVAILABLITY_CHANGED_VALUE, true);
+        sendBroadcastToAll(intent);
+        Log.v(TAG, "updating focussed RCC change to RCD: CallingPackageName:"
+                + packageName);
+    }
+
+    /**
+     * @hide
+     */
+    public void updateRemoteControllerOnExistingMediaPlayers() {
+        Log.v(TAG, "updateRemoteControllerOnExistingMediaPlayers: size of Player list: " +
+                                                                mMediaPlayers.size());
+        if (mMediaPlayers.size() > 0) {
+            Log.v(TAG, "Inform RemoteController regarding existing RCC entry");
+            final Iterator<MediaPlayerInfo> rccIterator = mMediaPlayers.iterator();
+            while (rccIterator.hasNext()) {
+                final MediaPlayerInfo player = rccIterator.next();
+                Intent intent = new Intent(AudioManager.RCC_CHANGED_ACTION);
+                intent.putExtra(AudioManager.EXTRA_CALLING_PACKAGE_NAME,
+                                                    player.getPackageName());
+                intent.putExtra(AudioManager.EXTRA_FOCUS_CHANGED_VALUE,
+                                                    player.isFocussed());
+                intent.putExtra(AudioManager.EXTRA_AVAILABLITY_CHANGED_VALUE, true);
+                sendBroadcastToAll(intent);
+                Log.v(TAG, "updating RCC change: CallingPackageName:" +
+                                                    player.getPackageName());
+            }
+        } else {
+            Log.e(TAG, "No RCC entry present to update");
         }
     }
 
@@ -1959,6 +2039,10 @@ public class AudioService extends IAudioService.Stub {
             if (mode == AudioSystem.MODE_CURRENT) {
                 mode = mMode;
             }
+
+            if ((mode == AudioSystem.MODE_IN_CALL) && isInCommunication()) {
+                 AudioSystem.setParameters("in_call=true");
+            }
             newModeOwnerPid = setModeInt(mode, cb, Binder.getCallingPid());
         }
         // when entering RINGTONE, IN_CALL or IN_COMMUNICATION mode, clear all
@@ -2555,17 +2639,14 @@ public class AudioService extends IAudioService.Stub {
                                     }
                                 }
                                 if (mBluetoothHeadset != null && mBluetoothHeadsetDevice != null) {
-                                    boolean status = false;
-                                    if (mScoAudioMode == SCO_MODE_RAW) {
-                                        status = mBluetoothHeadset.connectAudio();
-                                    } else if (mScoAudioMode == SCO_MODE_VIRTUAL_CALL) {
+                                    boolean status;
+                                    if (mScoAudioMode == SCO_MODE_VR) {
+                                        status = mBluetoothHeadset.startVoiceRecognition(
+                                                                            mBluetoothHeadsetDevice);
+                                    } else {
                                         status = mBluetoothHeadset.startScoUsingVirtualVoiceCall(
                                                                             mBluetoothHeadsetDevice);
-                                    } else if (mScoAudioMode == SCO_MODE_VR) {
-                                        status = mBluetoothHeadset.startVoiceRecognition(
-                                                                           mBluetoothHeadsetDevice);
                                     }
-
                                     if (status) {
                                         mScoAudioState = SCO_STATE_ACTIVE_INTERNAL;
                                     } else {
@@ -2588,15 +2669,13 @@ public class AudioService extends IAudioService.Stub {
                                mScoAudioState == SCO_STATE_ACTIVATE_REQ)) {
                     if (mScoAudioState == SCO_STATE_ACTIVE_INTERNAL) {
                         if (mBluetoothHeadset != null && mBluetoothHeadsetDevice != null) {
-                            boolean status = false;
-                            if (mScoAudioMode == SCO_MODE_RAW) {
-                                status = mBluetoothHeadset.disconnectAudio();
-                            } else if (mScoAudioMode == SCO_MODE_VIRTUAL_CALL) {
+                            boolean status;
+                            if (mScoAudioMode == SCO_MODE_VR) {
+                                status = mBluetoothHeadset.stopVoiceRecognition(
+                                                                        mBluetoothHeadsetDevice);
+                            } else {
                                 status = mBluetoothHeadset.stopScoUsingVirtualVoiceCall(
                                                                         mBluetoothHeadsetDevice);
-                            } else if (mScoAudioMode == SCO_MODE_VR) {
-                                        status = mBluetoothHeadset.stopVoiceRecognition(
-                                                                      mBluetoothHeadsetDevice);
                             }
 
                             if (!status) {
@@ -2790,25 +2869,21 @@ public class AudioService extends IAudioService.Stub {
                             switch (mScoAudioState) {
                             case SCO_STATE_ACTIVATE_REQ:
                                 mScoAudioState = SCO_STATE_ACTIVE_INTERNAL;
-                                if (mScoAudioMode == SCO_MODE_RAW) {
-                                    status = mBluetoothHeadset.connectAudio();
-                                } else if (mScoAudioMode == SCO_MODE_VIRTUAL_CALL) {
-                                    status = mBluetoothHeadset.startScoUsingVirtualVoiceCall(
-                                                                        mBluetoothHeadsetDevice);
-                                } else if (mScoAudioMode == SCO_MODE_VR) {
+                                if (mScoAudioMode == SCO_MODE_VR) {
                                     status = mBluetoothHeadset.startVoiceRecognition(
                                                                       mBluetoothHeadsetDevice);
+                                } else {
+                                    status = mBluetoothHeadset.startScoUsingVirtualVoiceCall(
+                                                                        mBluetoothHeadsetDevice);
                                 }
                                 break;
                             case SCO_STATE_DEACTIVATE_REQ:
-                                if (mScoAudioMode == SCO_MODE_RAW) {
-                                    status = mBluetoothHeadset.disconnectAudio();
-                                } else if (mScoAudioMode == SCO_MODE_VIRTUAL_CALL) {
-                                    status = mBluetoothHeadset.stopScoUsingVirtualVoiceCall(
-                                                                        mBluetoothHeadsetDevice);
-                                } else if (mScoAudioMode == SCO_MODE_VR) {
+                                if (mScoAudioMode == SCO_MODE_VR) {
                                     status = mBluetoothHeadset.stopVoiceRecognition(
                                                                       mBluetoothHeadsetDevice);
+                                } else {
+                                    status = mBluetoothHeadset.stopScoUsingVirtualVoiceCall(
+                                                                        mBluetoothHeadsetDevice);
                                 }
                                 break;
                             case SCO_STATE_DEACTIVATE_EXT_REQ:
@@ -2829,14 +2904,25 @@ public class AudioService extends IAudioService.Stub {
             }
         }
         public void onServiceDisconnected(int profile) {
+            Log.d(TAG, "onServiceDisconnected: Bluetooth profile: " + profile);
             switch(profile) {
             case BluetoothProfile.A2DP:
                 synchronized (mA2dpAvrcpLock) {
                     mA2dp = null;
                     synchronized (mConnectedDevices) {
                         if (mConnectedDevices.containsKey(AudioSystem.DEVICE_OUT_BLUETOOTH_A2DP)) {
-                            makeA2dpDeviceUnavailableNow(
-                                    mConnectedDevices.get(AudioSystem.DEVICE_OUT_BLUETOOTH_A2DP));
+                            Log.d(TAG, "A2dp service disconnects, pause music player");
+                            BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+                            BluetoothDevice btDevice = adapter.getRemoteDevice
+                                    (mConnectedDevices.get(AudioSystem.DEVICE_OUT_BLUETOOTH_A2DP));
+                            int delay = checkSendBecomingNoisyIntent(
+                                                AudioSystem.DEVICE_OUT_BLUETOOTH_A2DP, 0);
+                            queueMsgUnderWakeLock(mAudioHandler,
+                                                MSG_SET_A2DP_SRC_CONNECTION_STATE,
+                                                BluetoothA2dp.STATE_DISCONNECTED,
+                                                0,
+                                                btDevice,
+                                                delay);
                         }
                     }
                 }
@@ -2854,6 +2940,16 @@ public class AudioService extends IAudioService.Stub {
             case BluetoothProfile.HEADSET:
                 synchronized (mScoClients) {
                     mBluetoothHeadset = null;
+                    synchronized (mConnectedDevices) {
+                        if (mForcedUseForComm == AudioSystem.FORCE_BT_SCO) {
+                            Log.d(TAG, "Hfp service disconnects, update device to NONE");
+                            mForcedUseForComm = AudioSystem.FORCE_NONE;
+                            sendMsg(mAudioHandler, MSG_SET_FORCE_USE, SENDMSG_QUEUE,
+                                    AudioSystem.FOR_COMMUNICATION, mForcedUseForComm, null, 0);
+                            sendMsg(mAudioHandler, MSG_SET_FORCE_USE, SENDMSG_QUEUE,
+                                    AudioSystem.FOR_RECORD, mForcedUseForComm, null, 0);
+                        }
+                    }
                 }
                 break;
 
@@ -3036,10 +3132,11 @@ public class AudioService extends IAudioService.Stub {
                  (1 << AudioSystem.STREAM_SYSTEM)|(1 << AudioSystem.STREAM_SYSTEM_ENFORCED)),
                  UserHandle.USER_CURRENT);
 
-        // ringtone, notification and system streams are always affected by ringer mode
+        // ringtone, notification, system and dtmf streams are always affected by ringer mode
         ringerModeAffectedStreams |= (1 << AudioSystem.STREAM_RING)|
                                         (1 << AudioSystem.STREAM_NOTIFICATION)|
-                                        (1 << AudioSystem.STREAM_SYSTEM);
+                                        (1 << AudioSystem.STREAM_SYSTEM)|
+                                        (1 << AudioSystem.STREAM_DTMF);
 
         switch (mPlatformType) {
             case PLATFORM_TELEVISION:
@@ -3448,8 +3545,9 @@ public class AudioService extends IAudioService.Stub {
                         index = mIndexMax;
                     }
                 }
-                mIndex.put(device, index);
-
+                synchronized (this) {
+                    mIndex.put(device, index);
+                }
                 if (oldIndex != index) {
                     // Apply change to all streams using this one as alias
                     // if changing volume of current device, also change volume of current
@@ -4932,6 +5030,18 @@ public class AudioService extends IAudioService.Stub {
     public void remoteControlDisplayWantsPlaybackPositionSync(IRemoteControlDisplay rcd,
             boolean wantsSync) {
         mMediaFocusControl.remoteControlDisplayWantsPlaybackPositionSync(rcd, wantsSync);
+    }
+
+    public void setRemoteControlClientPlayItem(long uid, int scope) {
+        mMediaFocusControl.setRemoteControlClientPlayItem(uid, scope);
+    }
+
+    public void getRemoteControlClientNowPlayingEntries() {
+        mMediaFocusControl.getRemoteControlClientNowPlayingEntries();
+    }
+
+    public void setRemoteControlClientBrowsedPlayer() {
+        mMediaFocusControl.setRemoteControlClientBrowsedPlayer();
     }
 
     @Override

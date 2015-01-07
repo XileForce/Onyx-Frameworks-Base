@@ -52,6 +52,7 @@ import android.app.IActivityManager;
 import android.app.StatusBarManager;
 import android.app.admin.DevicePolicyManager;
 import android.animation.ValueAnimator;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -306,6 +307,8 @@ public class WindowManagerService extends IWindowManager.Stub
     private static final String PROPERTY_EMULATOR_CIRCULAR = "ro.emulator.circular";
 
     final private KeyguardDisableHandler mKeyguardDisableHandler;
+
+    private final int mSfHwRotation;
 
     final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -613,6 +616,8 @@ public class WindowManagerService extends IWindowManager.Stub
     final DisplayManagerInternal mDisplayManagerInternal;
     final DisplayManager mDisplayManager;
 
+    private boolean mForceDisableHardwareKeyboard = false;
+
     // Who is holding the screen on.
     Session mHoldingScreenOn;
     PowerManager.WakeLock mHoldingScreenWakeLock;
@@ -881,6 +886,9 @@ public class WindowManagerService extends IWindowManager.Stub
 
         mAnimator = new WindowAnimator(this);
 
+        mForceDisableHardwareKeyboard = context.getResources().getBoolean(
+                com.android.internal.R.bool.config_forceDisableHardwareKeyboard);
+
         LocalServices.addService(WindowManagerInternal.class, new LocalService());
         initPolicy();
 
@@ -895,6 +903,9 @@ public class WindowManagerService extends IWindowManager.Stub
         } finally {
             SurfaceControl.closeTransaction();
         }
+
+        // Load hardware rotation from prop
+        mSfHwRotation = android.os.SystemProperties.getInt("ro.sf.hwrotation",0) / 90;
 
         showCircularDisplayMaskIfNeeded();
         showEmulatorDisplayOverlayIfNeeded();
@@ -4000,6 +4011,15 @@ public class WindowManagerService extends IWindowManager.Stub
             if (changed) {
                 mFocusedApp = newFocus;
                 mInputMonitor.setFocusedAppLw(newFocus);
+                setFocusedStackFrame();
+                if (SHOW_LIGHT_TRANSACTIONS) Slog.i(TAG, ">>> OPEN TRANSACTION setFocusedApp");
+                SurfaceControl.openTransaction();
+                try {
+                    setFocusedStackLayer();
+                } finally {
+                    SurfaceControl.closeTransaction();
+                    if (SHOW_LIGHT_TRANSACTIONS) Slog.i(TAG, ">>> CLOSE TRANSACTION setFocusedApp");
+                }
             }
 
             if (moveFocusNow && changed) {
@@ -4820,8 +4840,19 @@ public class WindowManagerService extends IWindowManager.Stub
         if (NW > 0) {
             mWindowsChanged = true;
         }
+        int targetDisplayId = -1;
+        Task targetTask = mTaskIdToTask.get(token.appWindowToken.groupId);
+        if (targetTask != null) {
+            DisplayContent targetDisplayContent = targetTask.getDisplayContent();
+            if (targetDisplayContent != null) {
+                targetDisplayId = targetDisplayContent.getDisplayId();
+            }
+        }
         for (int i = 0; i < NW; i++) {
             WindowState win = windows.get(i);
+            if (targetDisplayId != -1 && win.getDisplayId() != targetDisplayId) {
+                continue;
+            }
             if (DEBUG_WINDOW_MOVEMENT) Slog.v(TAG, "Tmp removing app window " + win);
             win.getWindowList().remove(win);
             int j = win.mChildWindows.size();
@@ -5330,7 +5361,7 @@ public class WindowManagerService extends IWindowManager.Stub
 
     @Override
     public void keyguardGoingAway(boolean disableWindowAnimations,
-            boolean keyguardGoingToNotificationShade) {
+            boolean keyguardGoingToNotificationShade, boolean keyguardShowingMedia) {
         if (mContext.checkCallingOrSelfPermission(android.Manifest.permission.DISABLE_KEYGUARD)
                 != PackageManager.PERMISSION_GRANTED) {
             throw new SecurityException("Requires DISABLE_KEYGUARD permission");
@@ -5339,6 +5370,7 @@ public class WindowManagerService extends IWindowManager.Stub
             mAnimator.mKeyguardGoingAway = true;
             mAnimator.mKeyguardGoingAwayToNotificationShade = keyguardGoingToNotificationShade;
             mAnimator.mKeyguardGoingAwayDisableWindowAnimations = disableWindowAnimations;
+            mAnimator.mKeyguardGoingAwayShowingMedia = keyguardShowingMedia;
             requestTraversalLocked();
         }
     }
@@ -5737,6 +5769,10 @@ public class WindowManagerService extends IWindowManager.Stub
         } catch (RemoteException e) {
         }
 
+        // start QuickBoot to check if need restore from exception
+        if (SystemProperties.getBoolean("persist.sys.quickboot_ongoing", false))
+            checkQuickBootException();
+
         mPolicy.enableScreenAfterBoot();
 
         // Make sure the last requested orientation has been applied.
@@ -5753,6 +5789,15 @@ public class WindowManagerService extends IWindowManager.Stub
         }
         if (DEBUG_BOOT) Slog.i(TAG, "checkBootAnimationComplete: Animation complete!");
         return true;
+    }
+
+    private void checkQuickBootException() {
+        Intent intent = new Intent("org.codeaurora.action.QUICKBOOT");
+        intent.putExtra("mode", 2);
+        try {
+            mContext.startActivityAsUser(intent,UserHandle.CURRENT);
+        } catch (ActivityNotFoundException e) {
+        }
     }
 
     public void showBootMessage(final CharSequence msg, final boolean always) {
@@ -6081,7 +6126,7 @@ public class WindowManagerService extends IWindowManager.Stub
                     }
 
                     if (ws.mAppToken != null && ws.mAppToken.token == appToken &&
-                            ws.isDisplayedLw()) {
+                            ws.isDisplayedLw() && winAnim.mSurfaceShown) {
                         screenshotReady = true;
                     }
                 }
@@ -6134,6 +6179,9 @@ public class WindowManagerService extends IWindowManager.Stub
 
                 // The screenshot API does not apply the current screen rotation.
                 rot = getDefaultDisplayContentLocked().getDisplay().getRotation();
+                // Allow for abnormal hardware orientation
+                rot = (rot + mSfHwRotation) % 4;
+
 
                 if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_270) {
                     rot = (rot == Surface.ROTATION_90) ? Surface.ROTATION_270 : Surface.ROTATION_90;
@@ -7199,9 +7247,13 @@ public class WindowManagerService extends IWindowManager.Stub
             }
 
             // Determine whether a hard keyboard is available and enabled.
-            boolean hardKeyboardAvailable = config.keyboard != Configuration.KEYBOARD_NOKEYS;
+            boolean hardKeyboardAvailable = false;
+            if (!mForceDisableHardwareKeyboard) {
+                hardKeyboardAvailable = config.keyboard != Configuration.KEYBOARD_NOKEYS;
+            }
             if (hardKeyboardAvailable != mHardKeyboardAvailable) {
                 mHardKeyboardAvailable = hardKeyboardAvailable;
+                mShowImeWithHardKeyboard = hardKeyboardAvailable;
                 mH.removeMessages(H.REPORT_HARD_KEYBOARD_STATUS_CHANGE);
                 mH.sendEmptyMessage(H.REPORT_HARD_KEYBOARD_STATUS_CHANGE);
             }
@@ -8771,7 +8823,8 @@ public class WindowManagerService extends IWindowManager.Stub
             if (!gone || !win.mHaveFrame || win.mLayoutNeeded
                     || ((win.isConfigChanged() || win.setInsetsChanged()) &&
                             ((win.mAttrs.privateFlags & PRIVATE_FLAG_KEYGUARD) != 0 ||
-                            win.mAppToken != null && win.mAppToken.layoutConfigChanges))
+                            (win.mHasSurface && win.mAppToken != null &&
+                            win.mAppToken.layoutConfigChanges)))
                     || win.mAttrs.type == TYPE_UNIVERSE_BACKGROUND) {
                 if (!win.mLayoutAttached) {
                     if (initial) {
@@ -9416,6 +9469,12 @@ public class WindowManagerService extends IWindowManager.Stub
         }
     }
 
+    private void handlePrivateFlagFullyTransparent(WindowState w) {
+        final WindowManager.LayoutParams attrs = w.mAttrs;
+        final WindowStateAnimator winAnimator = w.mWinAnimator;
+        winAnimator.updateFullyTransparent(attrs);
+    }
+
     private void updateAllDrawnLocked(DisplayContent displayContent) {
         // See if any windows have been drawn, so they (and others
         // associated with them) can now be shown.
@@ -9616,6 +9675,8 @@ public class WindowManagerService extends IWindowManager.Stub
                     if (stack != null && !stack.testDimmingTag()) {
                         handleFlagDimBehind(w);
                     }
+
+                    handlePrivateFlagFullyTransparent(w);
 
                     if (isDefaultDisplay && obscuredChanged && (mWallpaperTarget == w)
                             && w.isVisibleLw()) {
@@ -10727,6 +10788,16 @@ public class WindowManagerService extends IWindowManager.Stub
     @Override
     public boolean hasNavigationBar() {
         return mPolicy.hasNavigationBar();
+    }
+
+    @Override
+    public boolean hasPermanentMenuKey() {
+        return mPolicy.hasPermanentMenuKey();
+    }
+
+    @Override 
+    public boolean needsNavigationBar() {
+        return mPolicy.needsNavigationBar();
     }
 
     @Override

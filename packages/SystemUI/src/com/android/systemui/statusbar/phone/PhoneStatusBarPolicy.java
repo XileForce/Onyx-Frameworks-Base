@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
+ *
  * Copyright (C) 2008 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,18 +26,28 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.Handler;
+import android.os.storage.StorageEventListener;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
 import android.os.UserHandle;
+import android.provider.Settings;
 import android.provider.Settings.Global;
 import android.telecom.TelecomManager;
+import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.android.internal.telephony.IccCardConstants;
+import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.TelephonyIntents;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.policy.CastController;
 import com.android.systemui.statusbar.policy.CastController.CastDevice;
+import com.android.systemui.statusbar.policy.SuController;
 
 /**
  * This class contains all of the policy about which icons are installed in the status
@@ -55,15 +68,21 @@ public class PhoneStatusBarPolicy {
     private static final String SLOT_VOLUME = "volume";
     private static final String SLOT_CDMA_ERI = "cdma_eri";
     private static final String SLOT_ALARM_CLOCK = "alarm_clock";
+    private static final String SLOT_SU = "su";
+
+    private static final String SDCARD_ABSENT = "sdcard_absent";
+    private static final String SDCARD_KEYWORD = "SD";
 
     private final Context mContext;
     private final StatusBarManager mService;
     private final Handler mHandler = new Handler();
     private final CastController mCast;
+    private final SuController mSuController;
+    private boolean mAlarmIconVisible;
 
     // Assume it's all good unless we hear otherwise.  We don't always seem
     // to get broadcasts that it *is* there.
-    IccCardConstants.State mSimState = IccCardConstants.State.READY;
+    IccCardConstants.State[] mSimState;
 
     private boolean mZenVisible;
     private boolean mVolumeVisible;
@@ -71,7 +90,7 @@ public class PhoneStatusBarPolicy {
     private int mZen;
 
     private boolean mBluetoothEnabled = false;
-
+    StorageManager mStorageManager;
 
     private BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
         @Override
@@ -102,9 +121,10 @@ public class PhoneStatusBarPolicy {
         }
     };
 
-    public PhoneStatusBarPolicy(Context context, CastController cast) {
+    public PhoneStatusBarPolicy(Context context, CastController cast, SuController su) {
         mContext = context;
         mCast = cast;
+        mSuController = su;
         mService = (StatusBarManager)context.getSystemService(Context.STATUS_BAR_SERVICE);
 
         // listen for broadcasts
@@ -118,6 +138,12 @@ public class PhoneStatusBarPolicy {
         filter.addAction(TelecomManager.ACTION_CURRENT_TTY_MODE_CHANGED);
         filter.addAction(Intent.ACTION_USER_SWITCHED);
         mContext.registerReceiver(mIntentReceiver, filter, null, mHandler);
+
+        int numPhones = TelephonyManager.getDefault().getPhoneCount();
+        mSimState = new IccCardConstants.State[numPhones];
+        for (int i = 0; i < numPhones; i++) {
+            mSimState[i] = IccCardConstants.State.READY;
+        }
 
         // TTY status
         mService.setIcon(SLOT_TTY,  R.drawable.stat_sys_tty_mode, 0, null);
@@ -148,10 +174,67 @@ public class PhoneStatusBarPolicy {
         mService.setIconVisibility(SLOT_VOLUME, false);
         updateVolumeZen();
 
+        if (mContext.getResources().getBoolean(R.bool.config_showSdcardAbsentIndicator)) {
+            mStorageManager = (StorageManager) context
+                    .getSystemService(Context.STORAGE_SERVICE);
+            StorageEventListener listener = new StorageEventListener() {
+                public void onStorageStateChanged(final String path,
+                        final String oldState, final String newState) {
+                    updateSDCardtoAbsent();
+                }
+            };
+            mStorageManager.registerListener(listener);
+        }
+
         // cast
         mService.setIcon(SLOT_CAST, R.drawable.stat_sys_cast, 0, null);
         mService.setIconVisibility(SLOT_CAST, false);
         mCast.addCallback(mCastCallback);
+
+        // su
+        mService.setIcon(SLOT_SU, R.drawable.stat_sys_su, 0, null);
+        mService.setIconVisibility(SLOT_SU, false);
+        mSuController.addCallback(mSuCallback);
+
+        mAlarmIconObserver.onChange(true);
+        mContext.getContentResolver().registerContentObserver(
+                Settings.System.getUriFor(Settings.System.SHOW_ALARM_ICON),
+                false, mAlarmIconObserver);
+    }
+
+    private ContentObserver mAlarmIconObserver = new ContentObserver(null) {
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            mAlarmIconVisible = Settings.System.getInt(mContext.getContentResolver(),
+                    Settings.System.SHOW_ALARM_ICON, 1) == 1;
+            updateAlarm();
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            onChange(selfChange, null);
+        }
+    };
+
+    private final void updateSDCardtoAbsent() {
+        mService.setIcon(SDCARD_ABSENT, R.drawable.stat_sys_no_sdcard, 0, null);
+        mService.setIconVisibility(SDCARD_ABSENT, !isSdCardInsert(mContext));
+    }
+
+    private boolean isSdCardInsert(Context context) {
+        return !mStorageManager.getVolumeState(getSDPath(context)).equals(
+                android.os.Environment.MEDIA_REMOVED);
+    }
+
+    private String getSDPath(Context context) {
+        StorageVolume[] volumes = mStorageManager.getVolumeList();
+        for (int i = 0; i < volumes.length; i++) {
+            if (volumes[i].isRemovable() && volumes[i].allowMassStorage()
+                    && volumes[i].getDescription(context).contains(SDCARD_KEYWORD)) {
+                return volumes[i].getPath();
+            }
+        }
+        return null;
     }
 
     public void setZenMode(int zen) {
@@ -161,8 +244,8 @@ public class PhoneStatusBarPolicy {
 
     private void updateAlarm() {
         AlarmManager alarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
-	boolean alarmSet = alarmManager.getNextAlarmClock(UserHandle.USER_CURRENT) != null;
-        mService.setIconVisibility(SLOT_ALARM_CLOCK, alarmSet);
+        boolean alarmSet = alarmManager.getNextAlarmClock(UserHandle.USER_CURRENT) != null;
+        mService.setIconVisibility(SLOT_ALARM_CLOCK, alarmSet && mAlarmIconVisible);
     }
 
     private final void updateSyncState(Intent intent) {
@@ -172,30 +255,41 @@ public class PhoneStatusBarPolicy {
     }
 
     private final void updateSimState(Intent intent) {
+        IccCardConstants.State simState;
         String stateExtra = intent.getStringExtra(IccCardConstants.INTENT_KEY_ICC_STATE);
-        if (IccCardConstants.INTENT_VALUE_ICC_ABSENT.equals(stateExtra)) {
-            mSimState = IccCardConstants.State.ABSENT;
-        }
-        else if (IccCardConstants.INTENT_VALUE_ICC_CARD_IO_ERROR.equals(stateExtra)) {
-            mSimState = IccCardConstants.State.CARD_IO_ERROR;
-        }
-        else if (IccCardConstants.INTENT_VALUE_ICC_READY.equals(stateExtra)) {
-            mSimState = IccCardConstants.State.READY;
-        }
-        else if (IccCardConstants.INTENT_VALUE_ICC_LOCKED.equals(stateExtra)) {
-            final String lockedReason =
-                    intent.getStringExtra(IccCardConstants.INTENT_KEY_LOCKED_REASON);
-            if (IccCardConstants.INTENT_VALUE_LOCKED_ON_PIN.equals(lockedReason)) {
-                mSimState = IccCardConstants.State.PIN_REQUIRED;
+
+        // Obtain the subscription info from intent
+        long subId = intent.getLongExtra(PhoneConstants.SUBSCRIPTION_KEY, 0);
+        Log.d(TAG, "updateSimState for subId :" + subId);
+        int phoneId = SubscriptionManager.getPhoneId(subId);
+        Log.d(TAG, "updateSimState for phoneId :" + phoneId);
+        Log.d(TAG, "updateSimState for Slot :" + SubscriptionManager.getSlotId(subId));
+        if (phoneId >= 0 ) {
+            if (IccCardConstants.INTENT_VALUE_ICC_ABSENT.equals(stateExtra)) {
+                simState = IccCardConstants.State.ABSENT;
             }
-            else if (IccCardConstants.INTENT_VALUE_LOCKED_ON_PUK.equals(lockedReason)) {
-                mSimState = IccCardConstants.State.PUK_REQUIRED;
+            else if (IccCardConstants.INTENT_VALUE_ICC_CARD_IO_ERROR.equals(stateExtra)) {
+                simState = IccCardConstants.State.CARD_IO_ERROR;
             }
-            else {
-                mSimState = IccCardConstants.State.NETWORK_LOCKED;
+            else if (IccCardConstants.INTENT_VALUE_ICC_READY.equals(stateExtra)) {
+                simState = IccCardConstants.State.READY;
             }
-        } else {
-            mSimState = IccCardConstants.State.UNKNOWN;
+            else if (IccCardConstants.INTENT_VALUE_ICC_LOCKED.equals(stateExtra)) {
+                final String lockedReason =
+                        intent.getStringExtra(IccCardConstants.INTENT_KEY_LOCKED_REASON);
+                if (IccCardConstants.INTENT_VALUE_LOCKED_ON_PIN.equals(lockedReason)) {
+                    simState = IccCardConstants.State.PIN_REQUIRED;
+                }
+                else if (IccCardConstants.INTENT_VALUE_LOCKED_ON_PUK.equals(lockedReason)) {
+                    simState = IccCardConstants.State.PUK_REQUIRED;
+                }
+                else {
+                    simState = IccCardConstants.State.PERSO_LOCKED;
+                }
+            } else {
+                simState = IccCardConstants.State.UNKNOWN;
+            }
+            mSimState[phoneId] = simState;
         }
     }
 
@@ -300,10 +394,22 @@ public class PhoneStatusBarPolicy {
         mService.setIconVisibility(SLOT_CAST, isCasting);
     }
 
+    private void updateSu() {
+        mService.setIconVisibility(SLOT_SU, mSuController.hasActiveSessions());
+    }
+
     private final CastController.Callback mCastCallback = new CastController.Callback() {
         @Override
         public void onCastDevicesChanged() {
             updateCast();
         }
     };
+
+    private final SuController.Callback mSuCallback = new SuController.Callback() {
+        @Override
+        public void onSuSessionsChanged() {
+            updateSu();
+        }
+    };
+
 }
