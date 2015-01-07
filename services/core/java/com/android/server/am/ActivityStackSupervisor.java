@@ -232,7 +232,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
      * setWindowManager is called. **/
     private boolean mLeanbackOnlyDevice;
 
-    PowerManager mPm;
+    private PowerManager mPm;
 
     /**
      * We don't want to allow the device to go to sleep while in the process
